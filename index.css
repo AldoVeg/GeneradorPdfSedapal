@@ -161,14 +161,14 @@ hr {
 .pdf-titulo {
   font-size: 40px;
   font-weight: bold;
-  color: red;
+  color: #1b54ac;
   text-align: center;
   text-transform: uppercase;
   margin-bottom: 6px;
 }
 
 .pdf-subtitulo {
-  font-size: 14px;
+  font-size: 25px;
   color: #222;
   text-align: center;
   text-transform: uppercase;
@@ -176,7 +176,7 @@ hr {
 }
 
 .pdf-fecha {
-  font-size: 14px;
+  font-size: 25px;
   color: #222;
   text-align: center;
   margin-bottom: 24px;
