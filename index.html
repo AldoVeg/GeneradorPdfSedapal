@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador de PDF - Sedapal</title>
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+
+  <div class="container">
+    <h1>Generador de Informe PDF</h1>
+    <p class="subtitulo">Completa los datos y selecciona las fotos para generar el documento.</p>
+
+    <hr />
+
+    <!-- Tipo de evento -->
+    <div class="grupo">
+      <label for="tipoEvento">Tipo de Evento</label>
+      <select id="tipoEvento">
+        <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
+        <option value="adultos">VISITA DE ADULTOS A LA PLANTA</option>
+        <option value="instituciones">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
+      </select>
+    </div>
+
+    <!-- Institución -->
+    <div class="grupo">
+      <label for="institucion">Institución</label>
+      <input type="text" id="institucion" placeholder="Ej: Universidad Católica Sedes Sapientiae – Los Olivos" />
+    </div>
+
+    <!-- Fecha -->
+    <div class="grupo">
+      <label for="fecha">Fecha</label>
+      <input type="date" id="fecha" />
+    </div>
+
+    <hr />
+
+    <!-- Fotos -->
+    <div class="grupo">
+      <label>Fotos (4 en total — 2 por página)</label>
+      <div class="fotos-grid">
+        <div class="foto-item">
+          <label for="foto1">Foto 1 (Página 1)</label>
+          <input type="file" id="foto1" accept="image/*" />
+          <img id="preview1" class="foto-preview" />
+        </div>
+        <div class="foto-item">
+          <label for="foto2">Foto 2 (Página 1)</label>
+          <input type="file" id="foto2" accept="image/*" />
+          <img id="preview2" class="foto-preview" />
+        </div>
+        <div class="foto-item">
+          <label for="foto3">Foto 3 (Página 2)</label>
+          <input type="file" id="foto3" accept="image/*" />
+          <img id="preview3" class="foto-preview" />
+        </div>
+        <div class="foto-item">
+          <label for="foto4">Foto 4 (Página 2)</label>
+          <input type="file" id="foto4" accept="image/*" />
+          <img id="preview4" class="foto-preview" />
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-generar">Generar PDF</button>
+  </div>
+
+  <!-- Plantilla PDF (oculta, se usa solo al generar el documento) -->
+  <div id="pdf-template">
+
+    <!-- Página 1 -->
+    <div class="pdf-pagina">
+      <img class="pdf-logo" src="logo/logosedapal.png" alt="Logo Sedapal" />
+      <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
+      <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
+      <p class="pdf-fecha" id="pdf-fecha-1"></p>
+      <img class="pdf-foto" id="pdf-foto-1" />
+      <img class="pdf-foto" id="pdf-foto-2" />
+    </div>
+
+    <!-- Página 2 -->
+    <div class="pdf-pagina">
+      <img class="pdf-logo" src="logo/logosedapal.png" alt="Logo Sedapal" />
+      <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
+      <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
+      <p class="pdf-fecha" id="pdf-fecha-2"></p>
+      <img class="pdf-foto" id="pdf-foto-3" />
+      <img class="pdf-foto" id="pdf-foto-4" />
+    </div>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>
