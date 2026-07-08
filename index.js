@@ -1,10 +1,9 @@
-// Almacena las imágenes en base64 para reutilizarlas en el PDF
+// Almacena las imágenes en base64 de manera interna en memoria RAM
 var imagenes = { 1: null, 2: null, 3: null, 4: null };
 
-// Preview de fotos al seleccionarlas
+// Procesamiento y guardado silencioso de archivos (Sin previsualizaciones web)
 [1, 2, 3, 4].forEach(function (n) {
-  var input   = document.getElementById('foto' + n);
-  var preview = document.getElementById('preview' + n);
+  var input = document.getElementById('foto' + n);
 
   input.addEventListener('change', function () {
     var archivo = input.files[0];
@@ -12,9 +11,7 @@ var imagenes = { 1: null, 2: null, 3: null, 4: null };
 
     var reader = new FileReader();
     reader.onload = function (e) {
-      imagenes[n] = e.target.result;
-      preview.src = e.target.result;
-      preview.classList.add('visible');
+      imagenes[n] = e.target.result; // Almacenamiento directo en el búfer
     };
     reader.readAsDataURL(archivo);
   });
@@ -27,27 +24,46 @@ function formatearFecha(valor) {
   return partes[2] + '.' + partes[1] + '.' + partes[0];
 }
 
-// Devuelve el HTML del título según el tipo seleccionado
-function tituloHTML(valor,texto) {
+// Devuelve el HTML del título con salto de línea específico según tipo de evento
+function tituloHTML(valor, texto) {
   if (valor === 'instituciones') {
-    return 'VISITA DE INSTITUCIONES<br>EDUCATIVAS A LA PLANTA';
+    return 'VISITAS DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
   }
   return texto;
 }
 
-// Genera el PDF capturando cada página de forma independiente
-function generarPDF() {
-  var tipoEvento  = document.getElementById('tipoEvento').value;
+// Algoritmo de limpieza para obtener el nombre corto de la institución (Sin prefijos genéricos)
+function obtenerNombreCorto(nombreCompleto) {
+  var texto = nombreCompleto.toUpperCase();
+
+  // Remueve palabras iniciales de tipo de entidad comunes en Perú
+  texto = texto.replace(/^(INSTITUCIÃ“N EDUCATIVA|INSTITUCION EDUCATIVA|I\.E\.P\.|I\.E\.|UNIVERSIDAD|COLEGIO|IEP|IE)\s+/i, '');
   
+  // Elimina caracteres especiales y deja solo alfanuméricos y espacios
+  texto = texto.replace(/[^A-Z0-9ÃÃ‰ÃÃ“ÃšÃ‘\s]/g, '');
+  
+  // Reemplaza espacios por guiones bajos para asegurar compatibilidad de descarga en celulares
+  return texto.trim().replace(/\s+/g, '_');
+}
+
+// Genera el PDF capturando las vistas del DOM de manera secuencial y asíncrona
+function generarPDF() {
+  var tipoEvento = document.getElementById('tipoEvento').value;
   var comboTipoEvento = document.getElementById('tipoEvento');
-  var tipoEventoTexto  = comboTipoEvento.options[comboTipoEvento.selectedIndex].text;
+  
+  if (!tipoEvento) {
+    alert('Por favor selecciona un tipo de evento.');
+    return;
+  }
 
+  var tipoEventoTexto = comboTipoEvento.options[comboTipoEvento.selectedIndex].text;
+  var institucion     = document.getElementById('institucion').value.trim();
+  var distrito        = document.getElementById('distrito').value.trim();
+  var fecha           = formatearFecha(document.getElementById('fecha').value);
 
-  var institucion = document.getElementById('institucion').value.trim();
-  var fecha       = formatearFecha(document.getElementById('fecha').value);
-
-  if (!tipoEvento || !institucion || !fecha) {
-    alert('Por favor completa todos los datos del evento.');
+  // Validación robusta de campos
+  if (!institucion || !distrito || !fecha) {
+    alert('Por favor completa todos los datos del evento y ubicación.');
     return;
   }
   if (!imagenes[1] || !imagenes[2] || !imagenes[3] || !imagenes[4]) {
@@ -55,42 +71,48 @@ function generarPDF() {
     return;
   }
 
-  var titulo = tituloHTML(tipoEvento,tipoEventoTexto);
+  var titulo = tituloHTML(tipoEvento, tipoEventoTexto);
+  var subtituloFormateado = (institucion + ' – ' + distrito).toUpperCase();
 
-  // Poblar página 1
-  document.getElementById('pdf-titulo-1').innerHTML        = titulo;
-  document.getElementById('pdf-institucion-1').textContent = institucion;
-  document.getElementById('pdf-fecha-1').textContent       = fecha;
-  document.getElementById('pdf-foto-1').src                = imagenes[1];
-  document.getElementById('pdf-foto-2').src                = imagenes[2];
+  // Carga de datos dinámicos en la plantilla oculta de la Página 1
+  document.getElementById('pdf-titulo-1').innerHTML = titulo;
+  document.getElementById('pdf-institucion-1').textContent = subtituloFormateado;
+  document.getElementById('pdf-fecha-1').textContent = fecha;
+  document.getElementById('pdf-foto-1').src = imagenes[1];
+  document.getElementById('pdf-foto-2').src = imagenes[2];
 
-  // Poblar página 2
-  document.getElementById('pdf-titulo-2').innerHTML        = titulo;
-  document.getElementById('pdf-institucion-2').textContent = institucion;
-  document.getElementById('pdf-fecha-2').textContent       = fecha;
-  document.getElementById('pdf-foto-3').src                = imagenes[3];
-  document.getElementById('pdf-foto-4').src                = imagenes[4];
+  // Carga de datos dinámicos en la plantilla oculta de la Página 2
+  document.getElementById('pdf-titulo-2').innerHTML = titulo;
+  document.getElementById('pdf-institucion-2').textContent = subtituloFormateado;
+  document.getElementById('pdf-fecha-2').textContent = fecha;
+  document.getElementById('pdf-foto-3').src = imagenes[3];
+  document.getElementById('pdf-foto-4').src = imagenes[4];
 
-  // Mostrar plantilla fija en la esquina superior para que html2canvas la capture sin offset
+  // Activación e inmovilización temporal de la hoja base para evitar saltos o recortes de html2canvas
   var template = document.getElementById('pdf-template');
   template.style.cssText = 'display:block; position:fixed; top:0; left:0; z-index:9999;';
 
   var paginas = Array.from(document.querySelectorAll('.pdf-pagina'));
-  var doc     = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
   function capturarPagina(index) {
     if (index >= paginas.length) {
-      doc.save('informe-sedapal.pdf');
-        //  template.style.cssText = 'display:none;';
+      // Aplicación de nomenclatura estructurada automatizada
+      var nombreCorto = obtenerNombreCorto(institucion);
+      var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCorto + '.pdf';
+      
+      // Guardado final y restauración de pantalla
+      doc.save(nombreFinalArchivo);
+      template.style.cssText = 'display:none;';
       return;
     }
 
     html2canvas(paginas[index], {
-      scale:   2,
+      scale: 2, // Garantiza resolución cristalina en impresiones o pantallas de alta densidad
       useCORS: true,
       logging: false,
-      width:   794,
-      height:  1123
+      width: 794,
+      height: 1123
     }).then(function (canvas) {
       var imgData = canvas.toDataURL('image/jpeg', 0.95);
       if (index > 0) doc.addPage();
@@ -99,8 +121,9 @@ function generarPDF() {
     });
   }
 
+  // Desborde del render secuencial
   capturarPagina(0);
 }
 
-// Botón Generar PDF
+// Vinculación segura de desencadenamiento de guardado
 document.querySelector('.btn-generar').addEventListener('click', generarPDF);
