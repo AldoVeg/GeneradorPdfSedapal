@@ -11,7 +11,7 @@ var imagenes = { 1: null, 2: null, 3: null, 4: null };
 
     var reader = new FileReader();
     reader.onload = function (e) {
-      imagenes[n] = e.target.result; // Almacenamiento directo en el búfer
+      imagenes[n] = e.target.result;
     };
     reader.readAsDataURL(archivo);
   });
@@ -24,12 +24,12 @@ function formatearFecha(valor) {
   return partes[2] + '.' + partes[1] + '.' + partes[0];
 }
 
-// Devuelve el HTML del título con salto de línea específico según tipo de evento
+// Devuelve el HTML del título en mayúsculas según tipo de evento
 function tituloHTML(valor, texto) {
   if (valor === 'instituciones') {
     return 'VISITAS DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
   }
-  return texto;
+  return texto.toUpperCase(); // Asegura mayúsculas en el texto libre del combo
 }
 
 // Algoritmo de limpieza para obtener el nombre corto de la institución (Sin prefijos genéricos)
@@ -61,7 +61,7 @@ function generarPDF() {
   var distrito        = document.getElementById('distrito').value.trim();
   var fecha           = formatearFecha(document.getElementById('fecha').value);
 
-  // Validación robusta de campos
+  // Validación de campos
   if (!institucion || !distrito || !fecha) {
     alert('Por favor completa todos los datos del evento y ubicación.');
     return;
@@ -108,7 +108,7 @@ function generarPDF() {
     }
 
     html2canvas(paginas[index], {
-      scale: 2, // Garantiza resolución cristalina en impresiones o pantallas de alta densidad
+      scale: 2,
       useCORS: true,
       logging: false,
       width: 794,
@@ -121,7 +121,6 @@ function generarPDF() {
     });
   }
 
-  // Desborde del render secuencial
   capturarPagina(0);
 }
 
