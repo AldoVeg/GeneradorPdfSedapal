@@ -1,141 +1,4 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f0f4f8;
-  display: flex;
-  justify-content: center;
-  padding: 40px 16px;
-}
-
-.container {
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 40px;
-  width: 100%;
-  max-width: 700px;
-}
-
-.container h1 {
-  color: #1a5fa8;
-  font-size: 22px;
-  margin-bottom: 8px;
-}
-
-.container p.subtitulo {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 32px;
-}
-
-.grupo {
-  margin-bottom: 24px;
-}
-
-label {
-  display: block;
-  font-size: 14px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 6px;
-}
-
-input[type="text"],
-input[type="date"],
-select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #333;
-  outline: none;
-  transition: border-color 0.2s;
-  background-color: #fff;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-}
-
-input[type="text"]:focus,
-input[type="date"]:focus,
-select:focus {
-  border-color: #1a5fa8;
-}
-
-.fotos-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.foto-item label {
-  font-weight: normal;
-  color: #555;
-}
-
-.foto-item input[type="file"] {
-  display: block;
-  width: 100%;
-  padding: 8px;
-  border: 1px dashed #aaa;
-  border-radius: 6px;
-  font-size: 13px;
-  background-color: #fafafa;
-  cursor: pointer;
-}
-
-.foto-item input[type="file"]:hover {
-  border-color: #1a5fa8;
-  background-color: #eef4ff;
-}
-
-.foto-preview {
-  display: none;
-  width: 100%;
-  margin-top: 8px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  object-fit: cover;
-  max-height: 160px;
-}
-
-.foto-preview.visible {
-  display: block;
-}
-
-.btn-generar {
-  display: block;
-  width: 100%;
-  padding: 14px;
-  background-color: #1a5fa8;
-  color: #fff;
-  font-size: 16px;
-  font-weight: bold;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 32px;
-  transition: background-color 0.2s;
-}
-
-.btn-generar:hover {
-  background-color: #154d8a;
-}
-
-hr {
-  border: none;
-  border-top: 1px solid #e0e0e0;
-  margin: 28px 0;
-}
-
-/* ── Plantilla PDF ─────────────────────────────────── */
+/* ── Plantilla PDF (Sección Modificada) ─────────────────────────────────── */
 
 #pdf-template {
   display: none;
@@ -144,12 +7,23 @@ hr {
 .pdf-pagina {
   width: 794px;
   height: 1123px;
-  padding: 48px 56px;
+  padding: 60px 56px; /* ↑ Más espacio libre en la zona superior e inferior */
   background: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-between; /* ↑ Distribuye el contenido dejando márgenes perfectos en la base */
   overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Contenedor opcional para agrupar los textos y mantenerlos juntos en el tope */
+.pdf-header-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
 .pdf-logo {
@@ -161,14 +35,14 @@ hr {
 .pdf-titulo {
   font-size: 40px;
   font-weight: bold;
-  color: #0082c9; /* Ajustado a Celeste Acero Institucional */
+  color: #0082c9;
   text-align: center;
   text-transform: uppercase;
   margin-bottom: 8px;
 }
 
 .pdf-subtitulo {
-  font-size: 25px; /* Ajustado a tamaño 25 */
+  font-size: 25px;
   color: #222;
   text-align: center;
   text-transform: uppercase;
@@ -176,20 +50,16 @@ hr {
 }
 
 .pdf-fecha {
-  font-size: 20px; /* Ajustado a tamaño 20 */
+  font-size: 20px;
   color: #222;
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 15px;
 }
 
 .pdf-foto {
   width: 100%;
-  max-height: 410px;
+  height: 380px; /* ↓ Reducido levemente de 410px a 380px para mayor esbeltez */
   object-fit: cover;
   border-radius: 4px;
-  margin-bottom: 16px;
-}
-
-.pdf-foto:last-child {
-  margin-bottom: 0;
+  margin-bottom: 0; /* Flexbox (space-between) se encarga del aire entre fotos */
 }
