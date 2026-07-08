@@ -1,6 +1,32 @@
 // Memoria en caché interna para almacenar las imágenes en Base64
 var imagenes = { 1: null, 2: null, 3: null, 4: null };
 
+// Opciones dinámicas para el segundo combo mapeadas de forma estricta
+var subCategoriasPorEvento = {
+  adultos: ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "COMUNIDAD", "ASOCIACIÓN"],
+  instituciones: ["INSTITUCIÓN EDUCATIVA", "COLEGIO", "NIDO"]
+};
+
+// Escuchador dinámico para controlar el intercambio de subcategorías en la misma fila
+document.getElementById('tipoEvento').addEventListener('change', function () {
+  var tipo = this.value;
+  var comboSub = document.getElementById('subCategoria');
+  
+  // Limpieza total del combo dependiente
+  comboSub.innerHTML = '<option value="" disabled selected>-- Selecciona Tipo --</option>';
+  comboSub.disabled = false;
+
+  // Inyección selectiva de opciones correspondientes
+  if (subCategoriasPorEvento[tipo]) {
+    subCategoriasPorEvento[tipo].forEach(function (opcion) {
+      var opt = document.createElement('option');
+      opt.value = opcion.toLowerCase();
+      opt.textContent = opcion; // Viene formateado directamente en mayúsculas
+      comboSub.appendChild(opt);
+    });
+  }
+});
+
 // Monitor silencioso de carga de archivos y actualización de miniaturas de control
 [1, 2, 3, 4].forEach(function (n) {
   var input = document.getElementById('foto' + n);
@@ -13,8 +39,6 @@ var imagenes = { 1: null, 2: null, 3: null, 4: null };
     var reader = new FileReader();
     reader.onload = function (e) {
       imagenes[n] = e.target.result;
-      
-      // Inyección ligera e inmediata en la miniatura de control del formulario
       if (formPreview) {
         formPreview.src = e.target.result;
         formPreview.classList.add('visible');
@@ -31,7 +55,7 @@ function formatearFecha(valor) {
   return partes[2] + '.' + partes[1] + '.' + partes[0];
 }
 
-// CORRECCIÓN: Devuelve las cadenas del título en SINGULAR según tipo de evento seleccionado
+// Devuelve las cadenas del título en SINGULAR según el tipo de evento seleccionado
 function tituloHTML(valor, texto) {
   if (valor === 'instituciones') {
     return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
@@ -39,33 +63,27 @@ function tituloHTML(valor, texto) {
   return (texto || '').toUpperCase();
 }
 
-// FILTRO DE BLINDAJE CRÍTICO: Remueve de forma agresiva prefijos genéricos institucionales
+// FILTRO DE BLINDAJE ABSOLUTO: Al estar separados en el formulario, el nombre corto nace limpio
 function obtenerNombreCorto(nombreCompleto) {
   var texto = nombreCompleto.toUpperCase();
-
-  // Expresión regular robustecida contra variantes educativas, universitarias y comunitarias
-  var patronPrefijos = /^(INSTITUCIÃ“N EDUCATIVA|INSTITUCION EDUCATIVA|I\.E\.P\.|I\.E\.|UNIVERSIDAD|COLEGIO|IEP|IE|ASOCIACIÃ“N|ASOCIACION|COMUNIDAD|COPRODELI|C\.E\.)\s+/i;
-  texto = texto.replace(patronPrefijos, '');
-  
-  // Limpieza absoluta de caracteres raros, puntuaciones y tildes corruptas
+  // Limpieza total de caracteres extraños o tildes corruptas móviles
   texto = texto.replace(/[^A-Z0-9ÃÃ‰ÃÃ“ÃšÃ‘\s]/g, '');
-  
-  // Reemplazo final de espacios por guiones bajos para descargas móviles seguras
+  // Reemplazo directo a estructura unificada por guiones bajos
   return texto.trim().replace(/\s+/g, '_');
 }
 
-// ALGORITMO ADAPTATIVO: Encoge el tamaño de la fuente si el texto excede los límites útiles
+// ALGORITMO ADAPTATIVO: Encoge la fuente del subtítulo si el texto unificado excede los límites útiles
 function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase) {
   var el = document.getElementById(elementoId);
   if (!el) return;
   
   el.style.fontSize = tamañoMaximoBase + 'px';
-  var anchoContenedor = el.parentElement.clientWidth || 682; // Ancho útil de la hoja
+  var anchoContenedor = el.parentElement.clientWidth || 682; 
   var anchoTexto = el.scrollWidth;
   
   if (anchoTexto > anchoContenedor) {
     var nuevoTamaño = Math.floor((anchoContenedor / anchoTexto) * tamañoMaximoBase);
-    if (nuevoTamaño < 14) nuevoTamaño = 14; // Límite mínimo de legibilidad
+    if (nuevoTamaño < 14) nuevoTamaño = 14; 
     el.style.fontSize = nuevoTamaño + 'px';
   }
 }
@@ -74,19 +92,24 @@ function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase) {
 function generarPDF() {
   var tipoEvento = document.getElementById('tipoEvento').value;
   var comboTipoEvento = document.getElementById('tipoEvento');
+  var comboSub = document.getElementById('subCategoria');
   
   if (!tipoEvento) {
     alert('Por favor selecciona un tipo de evento.');
     return;
   }
+  if (!comboSub.value) {
+    alert('Por favor selecciona el tipo de institución o entidad.');
+    return;
+  }
 
   var tipoEventoTexto = comboTipoEvento.options[comboTipoEvento.selectedIndex].text;
-  var institucion     = document.getElementById('institucion').value.trim();
-  var distrito        = document.getElementById('distrito').value.trim();
-  var fecha           = formatearFecha(document.getElementById('fecha').value);
+  var subCategoriaTexto = comboSub.options[comboSub.selectedIndex].text;
+  var nombreInstitucion = document.getElementById('institucion').value.trim();
+  var distrito          = document.getElementById('distrito').value.trim();
+  var fecha             = formatearFecha(document.getElementById('fecha').value);
 
-  // Validaciones obligatorias de campos vacíos
-  if (!institucion || !distrito || !fecha) {
+  if (!nombreInstitucion || !distrito || !fecha) {
     alert('Por favor completa todos los datos del evento y ubicación.');
     return;
   }
@@ -96,27 +119,27 @@ function generarPDF() {
   }
 
   var titulo = tituloHTML(tipoEvento, tipoEventoTexto);
-  var subtituloFormateado = (institucion + ' – ' + distrito).toUpperCase();
+  // Unificación del texto para el subtítulo impreso en la hoja (Ej: COLEGIO SANTA ROSA – LOS OLIVOS)
+  var subtituloFormateado = (subCategoriaTexto + ' ' + nombreInstitucion + ' – ' + distrito).toUpperCase();
 
-  // Carga de datos reales en la estructura del PDF (Página 1)
+  // Carga de datos reales en la estructura oculta (Página 1)
   document.getElementById('pdf-titulo-1').innerHTML = titulo;
   document.getElementById('pdf-institucion-1').textContent = subtituloFormateado;
   document.getElementById('pdf-fecha-1').textContent = fecha;
   document.getElementById('pdf-foto-1').src = imagenes[1];
   document.getElementById('pdf-foto-2').src = imagenes[2];
 
-  // Carga de datos reales en la estructura del PDF (Página 2)
+  // Carga de datos reales en la estructura oculta (Página 2)
   document.getElementById('pdf-titulo-2').innerHTML = titulo;
   document.getElementById('pdf-institucion-2').textContent = subtituloFormateado;
   document.getElementById('pdf-fecha-2').textContent = fecha;
   document.getElementById('pdf-foto-3').src = imagenes[3];
   document.getElementById('pdf-foto-4').src = imagenes[4];
 
-  // Inmovilización temporal del template oculto para captura limpia
   var template = document.getElementById('pdf-template');
   template.style.cssText = 'display:block; position:fixed; top:0; left:0; z-index:9999;';
 
-  // Ejecución del reescalado dinámico en caliente antes de renderizar las fotos
+  // Ajuste en caliente para prevenir saltos de línea destructivos
   ajustarFuenteAdaptativa('pdf-institucion-1', 25);
   ajustarFuenteAdaptativa('pdf-institucion-2', 25);
 
@@ -125,12 +148,12 @@ function generarPDF() {
 
   function capturarPagina(index) {
     if (index >= paginas.length) {
-      // Formateo y construcción del nombre de descarga estructurado
-      var nombreCorto = obtenerNombreCorto(institucion);
+      // Uso directo del nombre limpio libre de prefijos genéricos
+      var nombreCorto = obtenerNombreCorto(nombreInstitucion);
       var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCorto + '.pdf';
       
       doc.save(nombreFinalArchivo);
-      template.style.cssText = 'display:none;'; // Re-ocultar motor
+      template.style.cssText = 'display:none;'; 
       return;
     }
 
@@ -148,9 +171,7 @@ function generarPDF() {
     });
   }
 
-  // Desborde secuencial
   capturarPagina(0);
 }
 
-// Vinculación segura al botón de descarga
 document.querySelector('.btn-generar').addEventListener('click', generarPDF);
