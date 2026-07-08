@@ -14,7 +14,6 @@
 
     <hr />
 
-    <!-- Tipo de evento -->
     <div class="grupo">
       <label for="tipoEvento">Tipo de Evento</label>
       <select id="tipoEvento">
@@ -24,43 +23,42 @@
       </select>
     </div>
 
-    <!-- Institución -->
     <div class="grupo">
       <label for="institucion">Institución</label>
-      <input type="text" id="institucion" placeholder="Ej: Universidad Católica Sedes Sapientiae – Los Olivos" />
+      <input type="text" id="institucion" placeholder="Ej: Universidad Católica Sedes Sapientiae" />
     </div>
 
-    <!-- Fecha -->
-    <div class="grupo">
-      <label for="fecha">Fecha</label>
-      <input type="date" id="fecha" />
+    <div class="grupo fila-compartida">
+      <div class="subgrupo">
+        <label for="distrito">Distrito</label>
+        <input type="text" id="distrito" placeholder="Ej: Los Olivos" />
+      </div>
+      <div class="subgrupo">
+        <label for="fecha">Fecha</label>
+        <input type="date" id="fecha" />
+      </div>
     </div>
 
     <hr />
 
-    <!-- Fotos -->
     <div class="grupo">
       <label>Fotos (4 en total — 2 por página)</label>
       <div class="fotos-grid">
         <div class="foto-item">
           <label for="foto1">Foto 1 (Página 1)</label>
           <input type="file" id="foto1" accept="image/*" />
-          <img id="preview1" class="foto-preview" />
         </div>
         <div class="foto-item">
           <label for="foto2">Foto 2 (Página 1)</label>
           <input type="file" id="foto2" accept="image/*" />
-          <img id="preview2" class="foto-preview" />
         </div>
         <div class="foto-item">
           <label for="foto3">Foto 3 (Página 2)</label>
           <input type="file" id="foto3" accept="image/*" />
-          <img id="preview3" class="foto-preview" />
         </div>
         <div class="foto-item">
           <label for="foto4">Foto 4 (Página 2)</label>
           <input type="file" id="foto4" accept="image/*" />
-          <img id="preview4" class="foto-preview" />
         </div>
       </div>
     </div>
@@ -68,25 +66,26 @@
     <button class="btn-generar">Generar PDF</button>
   </div>
 
-  <!-- Plantilla PDF (oculta, se usa solo al generar el documento) -->
   <div id="pdf-template">
 
-    <!-- Página 1 -->
     <div class="pdf-pagina">
       <img class="pdf-logo" src="logo/logosedapal.png" alt="Logo Sedapal" />
-      <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
-      <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
-      <p class="pdf-fecha" id="pdf-fecha-1"></p>
+      <div class="pdf-header-block">
+        <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
+        <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
+        <p class="pdf-fecha" id="pdf-fecha-1"></p>
+      </div>
       <img class="pdf-foto" id="pdf-foto-1" />
       <img class="pdf-foto" id="pdf-foto-2" />
     </div>
 
-    <!-- Página 2 -->
     <div class="pdf-pagina">
       <img class="pdf-logo" src="logo/logosedapal.png" alt="Logo Sedapal" />
-      <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
-      <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
-      <p class="pdf-fecha" id="pdf-fecha-2"></p>
+      <div class="pdf-header-block">
+        <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
+        <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
+        <p class="pdf-fecha" id="pdf-fecha-2"></p>
+      </div>
       <img class="pdf-foto" id="pdf-foto-3" />
       <img class="pdf-foto" id="pdf-foto-4" />
     </div>
