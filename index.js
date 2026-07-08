@@ -1,10 +1,10 @@
-// Memoria caché para las imágenes Base64
+// Memoria en caché interna para almacenar las imágenes en Base64
 var imagenes = { 1: null, 2: null, 3: null, 4: null };
 
-// Monitor de selección y activación de miniaturas en el formulario + Vista en vivo
+// Monitor silencioso de carga de archivos y actualización de miniaturas de control
 [1, 2, 3, 4].forEach(function (n) {
   var input = document.getElementById('foto' + n);
-  var formPreview = document.getElementById('form-preview1' + n ? document.getElementById('form-preview' + n) : null);
+  var formPreview = document.getElementById('form-preview' + n);
 
   input.addEventListener('change', function () {
     var archivo = input.files[0];
@@ -14,29 +14,24 @@ var imagenes = { 1: null, 2: null, 3: null, 4: null };
     reader.onload = function (e) {
       imagenes[n] = e.target.result;
       
-      // Activar miniatura de control en el formulario web
-      if(formPreview) {
+      // Inyección ligera e inmediata en la miniatura de control del formulario
+      if (formPreview) {
         formPreview.src = e.target.result;
         formPreview.classList.add('visible');
-      }
-      
-      // Sincronizar instantáneamente con el monitor en vivo a la derecha (Muestra Pág 1)
-      var liveFoto = document.getElementById('live-foto' + n);
-      if (liveFoto) {
-        liveFoto.src = e.target.result;
       }
     };
     reader.readAsDataURL(archivo);
   });
 });
 
-// Transforma la fecha nativa al estándar peruano con puntos
+// Convierte la fecha del formato HTML (YYYY-MM-DD) a estándar con puntos (DD.MM.YYYY)
 function formatearFecha(valor) {
   if (!valor) return '';
   var partes = valor.split('-');
   return partes[2] + '.' + partes[1] + '.' + partes[0];
 }
 
+// Devuelve las cadenas del título según tipo de evento seleccionado
 function tituloHTML(valor, texto) {
   if (valor === 'instituciones') {
     return 'VISITAS DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
@@ -44,61 +39,37 @@ function tituloHTML(valor, texto) {
   return (texto || '').toUpperCase();
 }
 
-// FILTRO DE BLINDAJE COMPLETO: Extrae de forma estricta el nombre propio para el archivo
+// FILTRO DE BLINDAJE CRÍTICO: Remueve de forma agresiva prefijos genéricos institucionales
 function obtenerNombreCorto(nombreCompleto) {
   var texto = nombreCompleto.toUpperCase();
 
-  // Expresión regular robustecida contra prefijos genéricos institucionales y educativos
+  // Expresión regular robustecida contra variantes educativas, universitarias y comunitarias
   var patronPrefijos = /^(INSTITUCIÃ“N EDUCATIVA|INSTITUCION EDUCATIVA|I\.E\.P\.|I\.E\.|UNIVERSIDAD|COLEGIO|IEP|IE|ASOCIACIÃ“N|ASOCIACION|COMUNIDAD|COPRODELI|C\.E\.)\s+/i;
   texto = texto.replace(patronPrefijos, '');
   
-  // Limpieza absoluta de símbolos dejando caracteres alfanuméricos puros
+  // Limpieza absoluta de caracteres raros, puntuaciones y tildes corruptas
   texto = texto.replace(/[^A-Z0-9ÃÃ‰ÃÃ“ÃšÃ‘\s]/g, '');
+  
+  // Reemplazo final de espacios por guiones bajos para descargas móviles seguras
   return texto.trim().replace(/\s+/g, '_');
 }
 
-// FUNCIÓN MATRIZ: Ajusta fluidamente la escala de la fuente para impedir desbordes
+// ALGORITMO ADAPTATIVO: Encoge el tamaño de la fuente si el texto excede los límites útiles
 function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase) {
   var el = document.getElementById(elementoId);
   if (!el) return;
   
-  // Reseteamos al tamaño base original antes del cálculo
   el.style.fontSize = tamañoMaximoBase + 'px';
   
-  var anchoContenedor = el.parentElement.clientWidth || 682; // Ancho útil de impresión
+  var anchoContenedor = el.parentElement.clientWidth || 682; // Ancho útil útil de la hoja
   var anchoTexto = el.scrollWidth;
   
-  // Si el texto intenta desbordar la fila, calculamos la tasa proporcional de reducción
   if (anchoTexto > anchoContenedor) {
     var nuevoTamaño = Math.floor((anchoContenedor / anchoTexto) * tamañoMaximoBase);
-    // Margen de seguridad para evitar que baje a un tamaño ilegible
-    if (nuevoTamaño < 14) nuevoTamaño = 14; 
+    if (nuevoTamaño < 14) nuevoTamaño = 14; // Límite mínimo de legibilidad
     el.style.fontSize = nuevoTamaño + 'px';
   }
 }
-
-// EVENTO DE ESCUCHA EN TIEMPO REAL: Sincroniza e inyecta datos en el panel de la derecha
-function actualizarVistaPreviaEnVivo() {
-  var tipoEventoCombo = document.getElementById('tipoEvento');
-  var tipoTexto = tipoEventoCombo.selectedIndex > 0 ? tipoEventoCombo.options[tipoEventoCombo.selectedIndex].text : 'TIPO DE EVENTO';
-  var institucion = document.getElementById('institucion').value.trim();
-  var distrito = document.getElementById('distrito').value.trim();
-  var fechaRaw = document.getElementById('fecha').value;
-
-  var textoTitulo = tituloHTML(tipoEventoCombo.value, tipoTexto);
-  var textoSubtitulo = ((institucion ? institucion : 'NOMBRE DE INSTITUCIÓN') + (distrito ? ' – ' + distrito : '')).toUpperCase();
-  var textoFecha = fechaRaw ? formatearFecha(fechaRaw) : 'DD.MM.AAAA';
-
-  document.getElementById('live-titulo').innerHTML = textoTitulo;
-  document.getElementById('live-institucion').textContent = textoSubtitulo;
-  document.getElementById('live-fecha').textContent = textoFecha;
-}
-
-// Registro de eventos en tiempo real para el panel interactivo
-document.getElementById('tipoEvento').addEventListener('change', actualizarVistaPreviaEnVivo);
-document.getElementById('institucion').addEventListener('input', actualizarVistaPreviaEnVivo);
-document.getElementById('distrito').addEventListener('input', actualizarVistaPreviaEnVivo);
-document.getElementById('fecha').addEventListener('change', actualizarVistaPreviaEnVivo);
 
 // PROCESADOR Y COMPILADOR GENERAL DEL PDF
 function generarPDF() {
@@ -115,6 +86,7 @@ function generarPDF() {
   var distrito        = document.getElementById('distrito').value.trim();
   var fecha           = formatearFecha(document.getElementById('fecha').value);
 
+  // Validaciones obligatorias de campos vacíos
   if (!institucion || !distrito || !fecha) {
     alert('Por favor completa todos los datos del evento y ubicación.');
     return;
@@ -127,24 +99,25 @@ function generarPDF() {
   var titulo = tituloHTML(tipoEvento, tipoEventoTexto);
   var subtituloFormateado = (institucion + ' – ' + distrito).toUpperCase();
 
-  // Inyección física en los nodos ocultos del PDF
+  // Carga de datos reales en la estructura del PDF (Página 1)
   document.getElementById('pdf-titulo-1').innerHTML = titulo;
   document.getElementById('pdf-institucion-1').textContent = subtituloFormateado;
   document.getElementById('pdf-fecha-1').textContent = fecha;
   document.getElementById('pdf-foto-1').src = imagenes[1];
   document.getElementById('pdf-foto-2').src = imagenes[2];
 
+  // Carga de datos reales en la estructura del PDF (Página 2)
   document.getElementById('pdf-titulo-2').innerHTML = titulo;
   document.getElementById('pdf-institucion-2').textContent = subtituloFormateado;
   document.getElementById('pdf-fecha-2').textContent = fecha;
   document.getElementById('pdf-foto-3').src = imagenes[3];
   document.getElementById('pdf-foto-4').src = imagenes[4];
 
-  // Visualizar la plantilla temporalmente para realizar el cálculo de caja métrica real
+  // Inmovilización temporal del template oculto para captura limpia
   var template = document.getElementById('pdf-template');
   template.style.cssText = 'display:block; position:fixed; top:0; left:0; z-index:9999;';
 
-  // EJECUCIÓN CRÍTICA: Escalar dinámicamente las fuentes en ambas hojas antes de la captura
+  // Ejecución del reescalado dinámico en caliente antes de renderizar las fotos
   ajustarFuenteAdaptativa('pdf-institucion-1', 25);
   ajustarFuenteAdaptativa('pdf-institucion-2', 25);
 
@@ -153,11 +126,12 @@ function generarPDF() {
 
   function capturarPagina(index) {
     if (index >= paginas.length) {
+      // Formateo y construcción del nombre de descarga estructurado
       var nombreCorto = obtenerNombreCorto(institucion);
       var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCorto + '.pdf';
       
       doc.save(nombreFinalArchivo);
-      template.style.cssText = 'display:none;';
+      template.style.cssText = 'display:none;'; // Re-ocultar motor
       return;
     }
 
@@ -175,7 +149,9 @@ function generarPDF() {
     });
   }
 
+  // Desborde secuencial
   capturarPagina(0);
 }
 
+// Vinculación segura al botón de descarga
 document.querySelector('.btn-generar').addEventListener('click', generarPDF);
