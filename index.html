@@ -8,91 +8,71 @@
 </head>
 <body>
 
-  <div class="app-layout">
-    
-    <div class="container formulario-zona">
-      <h1>Generador de Informe PDF</h1>
-      <p class="subtitulo">Completa los datos y selecciona las fotos para generar el documento.</p>
+  <div class="container">
+    <h1>Generador de Informe PDF</h1>
+    <p class="subtitulo">Completa los datos y selecciona las fotos para generar el documento.</p>
 
-      <hr />
+    <hr />
 
-      <div class="grupo">
-        <label for="tipoEvento">Tipo de Evento</label>
-        <select id="tipoEvento">
-          <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
-          <option value="adultos">VISITA DE ADULTOS A LA PLANTA</option>
-          <option value="instituciones">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
-        </select>
-      </div>
-
-      <div class="grupo">
-        <label for="institucion">Institución</label>
-        <input type="text" id="institucion" placeholder="Ej: Universidad Católica Sedes Sapientiae" />
-      </div>
-
-      <div class="grupo fila-compartida">
-        <div class="subgrupo">
-          <label for="distrito">Distrito</label>
-          <input type="text" id="distrito" placeholder="Ej: Los Olivos" />
-        </div>
-        <div class="subgrupo">
-          <label for="fecha">Fecha</label>
-          <input type="date" id="fecha" />
-        </div>
-      </div>
-
-      <hr />
-
-      <div class="grupo">
-        <label>Fotos (4 en total — 2 por página)</label>
-        <div class="fotos-grid">
-          <div class="foto-item">
-            <label for="foto1">Foto 1 (Página 1)</label>
-            <input type="file" id="foto1" accept="image/*" />
-            <div class="wrapper-miniatura"><img id="form-preview1" class="miniatura-control" /></div>
-          </div>
-          <div class="foto-item">
-            <label for="foto2">Foto 2 (Página 1)</label>
-            <input type="file" id="foto2" accept="image/*" />
-            <div class="wrapper-miniatura"><img id="form-preview2" class="miniatura-control" /></div>
-          </div>
-          <div class="foto-item">
-            <label for="foto3">Foto 3 (Página 2)</label>
-            <input type="file" id="foto3" accept="image/*" />
-            <div class="wrapper-miniatura"><img id="form-preview3" class="miniatura-control" /></div>
-          </div>
-          <div class="foto-item">
-            <label for="foto4">Foto 4 (Página 2)</label>
-            <input type="file" id="foto4" accept="image/*" />
-            <div class="wrapper-miniatura"><img id="form-preview4" class="miniatura-control" /></div>
-          </div>
-        </div>
-      </div>
-
-      <button class="btn-generar">Generar PDF</button>
+    <div class="grupo">
+      <label for="tipoEvento">Tipo de Evento</label>
+      <select id="tipoEvento">
+        <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
+        <option value="adultos">VISITA DE ADULTOS A LA PLANTA</option>
+        <option value="instituciones">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
+      </select>
     </div>
 
-    <div class="panel-vista-previa">
-      <h3>Previsualización en Vivo (Página 1)</h3>
-      <div class="escala-wrapper">
-        <div id="live-preview-box" class="pdf-pagina-fake">
-          <img class="pdf-logo" src="logo/logosedapal.png" alt="Logo" />
-          <div class="pdf-header-block">
-            <h2 class="pdf-titulo-fake" id="live-titulo">TIPO DE EVENTO</h2>
-            <p class="pdf-subtitulo-fake" id="live-institucion">NOMBRE DE INSTITUCIÓN – DISTRITO</p>
-            <p class="pdf-fecha-fake" id="live-fecha">DD.MM.AAAA</p>
-          </div>
-          <div class="pdf-foto-fake-box"><img id="live-foto1" class="pdf-foto-fake" src="" alt="[ Espacio Foto 1 ]" /></div>
-          <div class="pdf-foto-fake-box"><img id="live-foto2" class="pdf-foto-fake" src="" alt="[ Espacio Foto 2 ]" /></div>
+    <div class="grupo">
+      <label for="institucion">Institución</label>
+      <input type="text" id="institucion" placeholder="Ej: Universidad Católica Sedes Sapientiae" />
+    </div>
+
+    <div class="grupo fila-compartida">
+      <div class="subgrupo">
+        <label for="distrito">Distrito</label>
+        <input type="text" id="distrito" placeholder="Ej: Los Olivos" />
+      </div>
+      <div class="subgrupo">
+        <label for="fecha">Fecha</label>
+        <input type="date" id="fecha" />
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="grupo">
+      <label>Fotos (4 en total — 2 por página)</label>
+      <div class="fotos-grid">
+        <div class="foto-item">
+          <label for="foto1">Foto 1 (Página 1)</label>
+          <input type="file" id="foto1" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview1" class="miniatura-control" /></div>
+        </div>
+        <div class="foto-item">
+          <label for="foto2">Foto 2 (Página 1)</label>
+          <input type="file" id="foto2" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview2" class="miniatura-control" /></div>
+        </div>
+        <div class="foto-item">
+          <label for="foto3">Foto 3 (Página 2)</label>
+          <input type="file" id="foto3" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview3" class="miniatura-control" /></div>
+        </div>
+        <div class="foto-item">
+          <label for="foto4">Foto 4 (Página 2)</label>
+          <input type="file" id="foto4" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview4" class="miniatura-control" /></div>
         </div>
       </div>
     </div>
 
+    <button class="btn-generar">Generar PDF</button>
   </div>
 
   <div id="pdf-template">
     <div class="pdf-pagina">
-      <img class="pdf-logo" src="logo/logosedapal.png" alt="Logo Sedapal" />
+      <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
       <div class="pdf-header-block">
         <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
         <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
@@ -103,7 +83,7 @@
     </div>
 
     <div class="pdf-pagina">
-      <img class="pdf-logo" src="logo/logosedapal.png" alt="Logo Sedapal" />
+      <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
       <div class="pdf-header-block">
         <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
         <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
