@@ -7,18 +7,24 @@
 body {
   font-family: Arial, sans-serif;
   background-color: #f0f4f8;
-  display: flex;
-  justify-content: center;
-  padding: 40px 16px;
+  padding: 30px 16px;
 }
 
-.container {
+/* Sistema de dos columnas (Layout Principal) */
+.app-layout {
+  display: flex;
+  max-width: 1300px;
+  margin: 0 auto;
+  gap: 30px;
+  align-items: flex-start;
+}
+
+.formulario-zona {
+  flex: 1;
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 40px;
-  width: 100%;
-  max-width: 700px;
 }
 
 .container h1 {
@@ -37,7 +43,6 @@ body {
   margin-bottom: 24px;
 }
 
-/* Fila combinada para Distrito y Fecha */
 .fila-compartida {
   display: flex;
   gap: 16px;
@@ -65,7 +70,6 @@ select {
   font-size: 14px;
   color: #333;
   outline: none;
-  transition: border-color 0.2s;
   background-color: #fff;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
@@ -79,31 +83,46 @@ select:focus {
   border-color: #1a5fa8;
 }
 
+/* Rejilla de fotos y Miniaturas de selección */
 .fotos-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
-.foto-item label {
-  font-weight: normal;
-  color: #555;
-}
-
 .foto-item input[type="file"] {
   display: block;
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   border: 1px dashed #aaa;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
   background-color: #fafafa;
   cursor: pointer;
 }
 
-.foto-item input[type="file"]:hover {
-  border-color: #1a5fa8;
-  background-color: #eef4ff;
+.wrapper-miniatura {
+  margin-top: 6px;
+  width: 100%;
+  height: 75px;
+  border: 1px dashed #ddd;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.miniatura-control {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.miniatura-control.visible {
+  display: block;
 }
 
 .btn-generar {
@@ -117,8 +136,7 @@ select:focus {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  margin-top: 32px;
-  transition: background-color 0.2s;
+  margin-top: 25px;
 }
 
 .btn-generar:hover {
@@ -128,26 +146,74 @@ select:focus {
 hr {
   border: none;
   border-top: 1px solid #e0e0e0;
-  margin: 28px 0;
+  margin: 24px 0;
 }
 
-/* Control responsivo para celulares */
-@media (max-width: 480px) {
-  .fila-compartida {
-    flex-direction: column;
-    gap: 24px;
-  }
-  .fotos-grid {
-    grid-template-columns: 1fr;
-  }
+/* COLUMNA DERECHA: PANEL VISTA PREVIA (INTERFAZ WEB) */
+.panel-vista-previa {
+  width: 440px;
+  background: #2c3e50;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  color: #fff;
+  position: sticky;
+  top: 30px;
 }
 
-/* ── Plantilla PDF (Estructura de Hoja Fija) ─────────────────────────────────── */
-
-#pdf-template {
-  display: none;
+.panel-vista-previa h3 {
+  font-size: 15px;
+  margin-bottom: 12px;
+  text-align: center;
+  color: #ecf0f1;
 }
 
+.escala-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Representación a Escala en Pantalla de la Hoja A4 del PDF */
+.pdf-pagina-fake {
+  width: 380px;
+  height: 538px; /* Proporcional a la hoja física */
+  background: #fff;
+  color: #222;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: 4px;
+}
+
+.pdf-pagina-fake .pdf-logo { width: 65px; align-self: flex-start; margin-bottom: 0;}
+.pdf-header-block { width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center;}
+
+.pdf-titulo-fake { font-size: 16px; font-weight: bold; color: #0082c9; text-transform: uppercase; margin-bottom: 2px; line-height: 1.2; text-align: center;}
+.pdf-subtitulo-fake { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; text-align: center; width: 100%; word-wrap: break-word;}
+.pdf-fecha-fake { font-size: 10px; text-transform: uppercase; margin-bottom: 10px;}
+
+.pdf-foto-fake-box {
+  width: 100%;
+  height: 175px;
+  background: #e8f0fe;
+  border: 1px dashed #7ea7e5;
+  border-radius: 3px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #728cb7;
+  overflow: hidden;
+}
+.pdf-foto-fake { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── PLANTILLA MOTOR PDF (Mantiene dimensiones físicas A4 reales) ── */
+#pdf-template { display: none; }
 .pdf-pagina {
   width: 794px;
   height: 1123px;
@@ -156,51 +222,43 @@ hr {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   overflow: hidden;
   box-sizing: border-box;
 }
 
-.pdf-header-block {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+.pdf-pagina .pdf-logo { width: 130px; align-self: flex-start; margin-bottom: 15px;}
+.pdf-titulo { font-size: 40px; font-weight: bold; color: #0082c9; text-align: center; text-transform: uppercase; margin-bottom: 8px; line-height: 1.2;}
 
-.pdf-logo {
-  width: 130px;
-  align-self: flex-start;
-}
-
-.pdf-titulo {
-  font-size: 40px;
-  font-weight: bold;
-  color: #0082c9;
-  text-align: center;
-  text-transform: uppercase; /* Forzado estricto a Mayúsculas */
-  margin-bottom: 8px;
-  line-height: 1.2;
-}
-
+/* Clase crítica: Contenedor del subtítulo adaptativo */
 .pdf-subtitulo {
-  font-size: 25px;
+  font-size: 25px; /* Tamaño base solicitado */
   color: #222;
   text-align: center;
-  text-transform: uppercase; /* Forzado estricto a Mayúsculas */
+  text-transform: uppercase;
   margin-bottom: 6px;
+  width: 100%;
+  white-space: nowrap; /* Impide saltos de línea destructivos */
 }
 
-.pdf-fecha {
-  font-size: 20px;
-  color: #222;
-  text-align: center;
-  text-transform: uppercase; /* Forzado estricto a Mayúsculas */
-}
+.pdf-fecha { font-size: 20px; color: #222; text-align: center; text-transform: uppercase; margin-bottom: 30px;}
 
+/* Separación explícita fija para resguardar la simetría perimetral */
 .pdf-foto {
   width: 100%;
   height: 380px;
   object-fit: cover;
   border-radius: 4px;
+  margin-bottom: 30px; /* Margen blindado entre foto y foto */
+}
+.pdf-foto:last-child { margin-bottom: 0; }
+
+/* Adaptación para pantallas de Celulares */
+@media (max-width: 850px) {
+  .app-layout { flex-direction: column; }
+  .panel-vista-previa { width: 100%; position: static; }
+  .pdf-pagina-fake { width: 100%; max-width: 380px; }
+  .fotos-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .fila-compartida { flex-direction: column; gap: 16px; }
 }
