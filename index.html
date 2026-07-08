@@ -24,8 +24,17 @@
     </div>
 
     <div class="grupo">
-      <label for="institucion">Institución</label>
-      <input type="text" id="institucion" placeholder="Ej: Universidad Católica Sedes Sapientiae" />
+      <label for="institucion">Institución o Entidad</label>
+      <div class="fila-compartida-dinamica">
+        <div class="col-subcategoria">
+          <select id="subCategoria" disabled>
+            <option value="" disabled selected>-- Tipo --</option>
+          </select>
+        </div>
+        <div class="col-nombre">
+          <input type="text" id="institucion" placeholder="Ej: Sedes Sapientiae / Santa Rosa" />
+        </div>
+      </div>
     </div>
 
     <div class="grupo fila-compartida">
