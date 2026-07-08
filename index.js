@@ -34,7 +34,7 @@ function formatearFecha(valor) {
 // Devuelve las cadenas del título según tipo de evento seleccionado
 function tituloHTML(valor, texto) {
   if (valor === 'instituciones') {
-    return 'VISITAS DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
+    return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
   }
   return (texto || '').toUpperCase();
 }
