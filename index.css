@@ -77,7 +77,6 @@ select:focus {
   border-color: #1a5fa8;
 }
 
-/* Rejilla de fotos y Miniaturas de selección */
 .fotos-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -105,7 +104,6 @@ select:focus {
   background-color: #eef4ff;
 }
 
-/* Estilo ligero para la miniatura seleccionada */
 .wrapper-miniatura {
   margin-top: 8px;
   width: 100%;
@@ -154,7 +152,6 @@ hr {
   margin: 28px 0;
 }
 
-/* Control responsivo para pantallas móviles */
 @media (max-width: 480px) {
   .fila-compartida {
     flex-direction: column;
@@ -165,7 +162,7 @@ hr {
   }
 }
 
-/* ── PLANTILLA MOTOR PDF (Estructura de Hoja Fija A4 Real) ── */
+/* ── PLANTILLA MOTOR PDF (Calibración de Simetría Exigida) ── */
 #pdf-template {
   display: none;
 }
@@ -173,7 +170,7 @@ hr {
 .pdf-pagina {
   width: 794px;
   height: 1123px;
-  padding: 60px 56px;
+  padding: 60px 56px; /* Márgenes simétricos controlados */
   background: #fff;
   display: flex;
   flex-direction: column;
@@ -212,7 +209,7 @@ hr {
   text-transform: uppercase;
   margin-bottom: 6px;
   width: 100%;
-  white-space: nowrap; /* Impide saltos de línea destructivos */
+  white-space: nowrap; 
 }
 
 .pdf-fecha {
@@ -220,17 +217,17 @@ hr {
   color: #222;
   text-align: center;
   text-transform: uppercase;
-  margin-bottom: 30px; /* Aire garantizado antes de la primera foto */
+  margin-bottom: 25px; /* Espacio calibrado hacia la primera foto */
 }
 
 .pdf-foto {
   width: 100%;
-  height: 380px;
+  height: 360px; /* Reducción a 360px para equilibrio óptimo en A4 */
   object-fit: cover;
   border-radius: 4px;
-  margin-bottom: 30px; /* Margen blindado e inalterable entre fotos */
+  margin-bottom: 15px; /* Reducido a la mitad exacta para evitar vacíos */
 }
 
 .pdf-foto:last-child {
-  margin-bottom: 0;
+  margin-bottom: 0; /* Blindaje para no alterar el margen de la base */
 }
