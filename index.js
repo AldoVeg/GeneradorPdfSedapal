@@ -31,7 +31,7 @@ function formatearFecha(valor) {
   return partes[2] + '.' + partes[1] + '.' + partes[0];
 }
 
-// Devuelve las cadenas del título según tipo de evento seleccionado
+// CORRECCIÓN: Devuelve las cadenas del título en SINGULAR según tipo de evento seleccionado
 function tituloHTML(valor, texto) {
   if (valor === 'instituciones') {
     return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
@@ -60,8 +60,7 @@ function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase) {
   if (!el) return;
   
   el.style.fontSize = tamañoMaximoBase + 'px';
-  
-  var anchoContenedor = el.parentElement.clientWidth || 682; // Ancho útil útil de la hoja
+  var anchoContenedor = el.parentElement.clientWidth || 682; // Ancho útil de la hoja
   var anchoTexto = el.scrollWidth;
   
   if (anchoTexto > anchoContenedor) {
