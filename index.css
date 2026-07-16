@@ -1,255 +1,119 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador de PDF - Sedapal</title>
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
 
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f0f4f8;
-  display: flex;
-  justify-content: center;
-  padding: 40px 16px;
-}
+  <div class="container">
+    <h1>Generador de Informe PDF</h1>
+    <p class="subtitulo">Completa los datos y selecciona las fotos para generar el documento.</p>
 
-.container {
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 40px;
-  width: 100%;
-  max-width: 700px;
-}
+    <hr />
 
-.container h1 {
-  color: #1a5fa8;
-  font-size: 22px;
-  margin-bottom: 8px;
-}
+    <!-- Tipo de evento (Ordenados por Coherencia y Relevancia) -->
+    <div class="grupo">
+      <label for="tipoEvento">Tipo de Evento</label>
+      <select id="tipoEvento">
+        <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
+        <option value="VISITA_IE">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
+        <option value="VISITA_ADULTOS">VISITA DE ADULTOS A LA PLANTA</option>
+        <option value="TALLER_IE">TALLER A INSTITUCIONES EDUCATIVAS</option>
+        <option value="TALLER_EMPRESAS">TALLER A EMPRESAS</option>
+      </select>
+    </div>
 
-.container p.subtitulo {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 32px;
-}
+    <!-- Fila Compartida: Subcategoría (Izquierda) + Nombre (Derecha) -->
+    <div class="grupo">
+      <label for="institucion">Institución o Entidad</label>
+      <div class="fila-compartida-dinamica">
+        <div class="col-subcategoria">
+          <select id="subCategoria" disabled>
+            <option value="" disabled selected>-- Tipo --</option>
+          </select>
+        </div>
+        <div class="col-nombre">
+          <input type="text" id="institucion" placeholder="Selecciona tipo de evento primero" disabled />
+        </div>
+      </div>
+    </div>
 
-.grupo {
-  margin-bottom: 24px;
-}
+    <!-- Distrito y Fecha -->
+    <div class="grupo fila-compartida">
+      <div class="subgrupo">
+        <label for="distrito">Distrito</label>
+        <input type="text" id="distrito" placeholder="Ej: Los Olivos" />
+      </div>
+      <div class="subgrupo">
+        <label for="fecha">Fecha</label>
+        <input type="date" id="fecha" />
+      </div>
+    </div>
 
-.fila-compartida {
-  display: flex;
-  gap: 16px;
-}
+    <hr />
 
-/* Fila Compartida Inteligente */
-.fila-compartida-dinamica {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-}
+    <!-- Fotos y Miniaturas -->
+    <div class="grupo">
+      <label>Fotos (4 en total — 2 por página)</label>
+      <div class="fotos-grid">
+        <div class="foto-item">
+          <label for="foto1">Foto 1 (Página 1)</label>
+          <input type="file" id="foto1" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview1" class="miniatura-control" /></div>
+        </div>
+        <div class="foto-item">
+          <label for="foto2">Foto 2 (Página 1)</label>
+          <input type="file" id="foto2" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview2" class="miniatura-control" /></div>
+        </div>
+        <div class="foto-item">
+          <label for="foto3">Foto 3 (Página 2)</label>
+          <input type="file" id="foto3" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview3" class="miniatura-control" /></div>
+        </div>
+        <div class="foto-item">
+          <label for="foto4">Foto 4 (Página 2)</label>
+          <input type="file" id="foto4" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview4" class="miniatura-control" /></div>
+        </div>
+      </div>
+    </div>
 
-.col-subcategoria {
-  flex: 0 0 35%; /* 35% reservado para subcategoría */
-}
+    <button class="btn-generar">Generar PDF</button>
+  </div>
 
-.col-nombre {
-  flex: 0 0 65%;
-  flex-grow: 1;
-}
+  <!-- PLANTILLA MOTOR PDF -->
+  <div id="pdf-template">
+    <!-- Página 1 -->
+    <div class="pdf-pagina">
+      <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
+      <div class="pdf-header-block">
+        <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
+        <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
+        <p class="pdf-fecha" id="pdf-fecha-1"></p>
+      </div>
+      <img class="pdf-foto" id="pdf-foto-1" />
+      <img class="pdf-foto" id="pdf-foto-2" />
+    </div>
 
-.subgrupo {
-  flex: 1;
-}
+    <!-- Página 2 -->
+    <div class="pdf-pagina">
+      <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
+      <div class="pdf-header-block">
+        <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
+        <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
+        <p class="pdf-fecha" id="pdf-fecha-2"></p>
+      </div>
+      <img class="pdf-foto" id="pdf-foto-3" />
+      <img class="pdf-foto" id="pdf-foto-4" />
+    </div>
+  </div>
 
-label {
-  display: block;
-  font-size: 14px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 6px;
-}
-
-input[type="text"],
-input[type="date"],
-select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #333;
-  outline: none;
-  background-color: #fff;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-}
-
-select:disabled,
-input:disabled {
-  background-color: #f5f5f5;
-  color: #aaa;
-  cursor: not-allowed;
-}
-
-input[type="text"]:focus,
-input[type="date"]:focus,
-select:focus {
-  border-color: #1a5fa8;
-}
-
-.fotos-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.foto-item label {
-  font-weight: normal;
-  color: #555;
-}
-
-.foto-item input[type="file"] {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  border: 1px dashed #aaa;
-  border-radius: 6px;
-  font-size: 13px;
-  background-color: #fafafa;
-  cursor: pointer;
-}
-
-.wrapper-miniatura {
-  margin-top: 8px;
-  width: 100%;
-  height: 90px;
-  border: 1px dashed #ddd;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #fafafa;
-  overflow: hidden;
-}
-
-.miniatura-control {
-  display: none;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.miniatura-control.visible {
-  display: block;
-}
-
-.btn-generar {
-  display: block;
-  width: 100%;
-  padding: 14px;
-  background-color: #1a5fa8;
-  color: #fff;
-  font-size: 16px;
-  font-weight: bold;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 32px;
-}
-
-.btn-generar:hover {
-  background-color: #154d8a;
-}
-
-hr {
-  border: none;
-  border-top: 1px solid #e0e0e0;
-  margin: 28px 0;
-}
-
-@media (max-width: 480px) {
-  .fila-compartida,
-  .fila-compartida-dinamica {
-    flex-direction: column;
-    gap: 16px;
-  }
-  .col-subcategoria, .col-nombre {
-    flex: 0 0 100%;
-  }
-  .fotos-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ── PLANTILLA MOTOR PDF (Simetría e Impresión) ── */
-#pdf-template {
-  display: none;
-}
-
-.pdf-pagina {
-  width: 794px;
-  height: 1123px;
-  padding: 60px 56px;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.pdf-header-block {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.pdf-logo {
-  width: 130px;
-  align-self: flex-start;
-  margin-bottom: 15px;
-}
-
-.pdf-titulo {
-  font-size: 40px;
-  font-weight: bold;
-  color: #0082c9;
-  text-align: center;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  line-height: 1.2;
-}
-
-.pdf-subtitulo {
-  font-size: 25px;
-  color: #222;
-  text-align: center;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-  width: 100%;
-  white-space: nowrap; 
-}
-
-.pdf-fecha {
-  font-size: 20px;
-  color: #222;
-  text-align: center;
-  text-transform: uppercase;
-  margin-bottom: 25px;
-}
-
-.pdf-foto {
-  width: 100%;
-  height: 360px;
-  object-fit: cover;
-  border-radius: 4px;
-  margin-bottom: 15px;
-}
-
-.pdf-foto:last-child {
-  margin-bottom: 0;
-}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>
