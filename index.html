@@ -18,8 +18,10 @@
       <label for="tipoEvento">Tipo de Evento</label>
       <select id="tipoEvento">
         <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
-        <option value="adultos">VISITA DE ADULTOS A LA PLANTA</option>
-        <option value="instituciones">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
+        <option value="visita_ie">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
+        <option value="visita_adultos">VISITA DE ADULTOS A LA PLANTA</option>
+        <option value="taller_ie">TALLER A INSTITUCIONES EDUCATIVAS</option>
+        <option value="taller_empresas">TALLER A EMPRESAS</option>
       </select>
     </div>
 
@@ -32,7 +34,7 @@
           </select>
         </div>
         <div class="col-nombre">
-          <input type="text" id="institucion" placeholder="Ej: Sedes Sapientiae / Santa Rosa" />
+          <input type="text" id="institucion" placeholder="Selecciona tipo de evento primero" disabled />
         </div>
       </div>
     </div>
