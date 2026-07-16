@@ -42,7 +42,6 @@ body {
   gap: 16px;
 }
 
-/* Fila Compartida Inteligente */
 .fila-compartida-dinamica {
   display: flex;
   gap: 12px;
@@ -70,7 +69,7 @@ label {
   margin-bottom: 6px;
 }
 
-/* Forzar visualmente mayúsculas en tiempo real en la interfaz de usuario */
+/* Forzar mayúsculas visuales en inputs */
 input[type="text"] {
   text-transform: uppercase;
 }
