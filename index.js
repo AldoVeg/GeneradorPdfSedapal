@@ -1,40 +1,52 @@
-// Memoria en caché interna para almacenar las imágenes en Base64
+// Memoria caché para imágenes
 var imagenes = { 1: null, 2: null, 3: null, 4: null };
 
-// Opciones dinámicas ordenadas meticulosamente por rango de relevancia y jerarquía
+// Sincronización estricta de las llaves en MAYÚSCULAS con los values del HTML
 var subCategoriasPorEvento = {
-  visita_ie: ["INSTITUCIÓN EDUCATIVA", "COLEGIO"],
-  visita_adultos: ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA"],
-  taller_ie: ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "INSTITUTO", "INSTITUCIÓN EDUCATIVA", "COLEGIO", "CEBA", "INICIAL", "NIDO"],
-  taller_empresas: ["SEDAPAL", "MUNICIPALIDAD", "UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "CENTRO COMERCIAL", "MERCADO", "URBANIZACIÓN", "ASOCIACIÓN", "A.H."]
+  "VISITA_IE": ["INSTITUCIÓN EDUCATIVA", "COLEGIO"],
+  "VISITA_ADULTOS": ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA"],
+  "TALLER_IE": ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "INSTITUTO", "INSTITUCIÓN EDUCATIVA", "COLEGIO", "CEBA", "INICIAL", "NIDO"],
+  "TALLER_EMPRESAS": ["SEDAPAL", "MUNICIPALIDAD", "UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "CENTRO COMERCIAL", "MERCADO", "URBANIZACIÓN", "ASOCIACIÓN", "A.H."]
 };
 
-// Escuchador dinámico para controlar el intercambio de subcategorías en la misma fila
+// Forzar entrada en mayúsculas en caliente (Teclado celular/escritorio)
+document.getElementById('institucion').addEventListener('input', function() {
+  this.value = this.value.toUpperCase();
+});
+document.getElementById('distrito').addEventListener('input', function() {
+  this.value = this.value.toUpperCase();
+});
+
+// Escuchador dinámico sincronizado y con Reset integrado
 document.getElementById('tipoEvento').addEventListener('change', function () {
   var tipo = this.value;
   var comboSub = document.getElementById('subCategoria');
   var inputNombre = document.getElementById('institucion');
   
-  // Limpieza total del combo dependiente
-  comboSub.innerHTML = '<option value="" disabled selected>-- Selecciona Tipo --</option>';
-  comboSub.disabled = false;
+  // Limpieza absoluta previa (Reset reactivo)
+  comboSub.innerHTML = '<option value="" disabled selected>-- Tipo --</option>';
+  inputNombre.value = '';
   
-  // Habilitar cuadro de texto para el nombre propio
-  inputNombre.disabled = false;
-  inputNombre.placeholder = "Escribe el nombre aquí...";
+  if (tipo && subCategoriasPorEvento[tipo]) {
+    comboSub.disabled = false;
+    inputNombre.disabled = false;
+    inputNombre.placeholder = "Escribe el nombre aquí...";
 
-  // Inyección selectiva de opciones correspondientes en mayúsculas
-  if (subCategoriasPorEvento[tipo]) {
+    // Inyección de subcategorías correspondientes
     subCategoriasPorEvento[tipo].forEach(function (opcion) {
       var opt = document.createElement('option');
-      opt.value = opcion; 
+      opt.value = opcion;
       opt.textContent = opcion;
       comboSub.appendChild(opt);
     });
+  } else {
+    comboSub.disabled = true;
+    inputNombre.disabled = true;
+    inputNombre.placeholder = "Selecciona tipo de evento primero";
   }
 });
 
-// Monitor de carga de archivos y actualización de miniaturas de control
+// Lector de archivos y miniaturas de control
 [1, 2, 3, 4].forEach(function (n) {
   var input = document.getElementById('foto' + n);
   var formPreview = document.getElementById('form-preview' + n);
@@ -55,51 +67,50 @@ document.getElementById('tipoEvento').addEventListener('change', function () {
   });
 });
 
-// Convierte la fecha del formato HTML (YYYY-MM-DD) a estándar con puntos (DD.MM.YYYY)
+// Convierte fecha de HTML (YYYY-MM-DD) a estándar (DD.MM.YYYY)
 function formatearFecha(valor) {
   if (!valor) return '';
   var partes = valor.split('-');
   return partes[2] + '.' + partes[1] + '.' + partes[0];
 }
 
-// Devuelve las cadenas del título en SINGULAR y MAYÚSCULAS según el tipo de evento seleccionado
-function tituloHTML(valor, texto) {
-  if (valor === 'visita_ie') {
-    return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
-  }
-  if (valor === 'visita_adultos') {
-    return 'VISITA DE ADULTOS A LA PLANTA';
-  }
-  if (valor === 'taller_ie') {
-    return 'TALLER A INSTITUCIONES<br>EDUCATIVAS';
-  }
-  if (valor === 'taller_empresas') {
-    return 'TALLER A EMPRESAS';
-  }
-  return (texto || '').toUpperCase();
+// Devuelve el título oficial en SINGULAR y en mayúsculas cerradas
+function obtenerTituloPDF(valor) {
+  if (valor === 'VISITA_IE') return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
+  if (valor === 'VISITA_ADULTOS') return 'VISITA DE ADULTOS A LA PLANTA';
+  if (valor === 'TALLER_IE') return 'TALLER A INSTITUCIONES<br>EDUCATIVAS';
+  if (valor === 'TALLER_EMPRESAS') return 'TALLER A EMPRESAS';
+  return '';
 }
 
-// FILTRO DE BLINDAJE ABSOLUTO: Nombres limpios sin prefijos ni palabras repetidas. 
-// Además, si la subcategoría es SEDAPAL, se limpia del nombre del archivo final para evitar redundancias.
+// FILTRO DE BLINDAJE: Limpia duplicados y formatea de forma segura el nombre del archivo final.
 function obtenerNombreCorto(nombreCompleto, subCategoriaSeleccionada) {
-  var texto = nombreCompleto.toUpperCase();
-  var sub = (subCategoriaSeleccionada || '').toUpperCase();
+  var texto = nombreCompleto.toUpperCase().trim();
+  var sub = (subCategoriaSeleccionada || '').toUpperCase().trim();
+  
+  // Limpieza de caracteres prohibidos en nombres de archivos
+  texto = texto.replace(/[^A-Z0-9\s-_]/g, '');
+  
+  var resultado = '';
   
   if (sub === 'SEDAPAL') {
-    // Si la subcategoría es SEDAPAL, removemos la palabra "SEDAPAL" si fue tipeada de nuevo en el cuadro libre
-    texto = texto.replace(/\bSEDAPAL\b/gi, '');
+    // Si escribió 'SEDAPAL' otra vez en el input de texto, se lo quitamos para que no se repita
+    var textoLimpio = texto.replace(/\bSEDAPAL\b/gi, '').trim();
+    if (textoLimpio === '') {
+      resultado = 'SEDAPAL';
+    } else {
+      resultado = 'SEDAPAL_' + textoLimpio.replace(/\s+/g, '_');
+    }
+  } else {
+    // Para cualquier otro caso (ej: COLEGIO + SANTA ROSA)
+    resultado = sub + '_' + texto.replace(/\s+/g, '_');
   }
   
-  // Limpieza general de caracteres extraños o tildes corruptas móviles
-  texto = texto.replace(/[^A-Z0-9\s]/g, '');
-  
-  var resultado = texto.trim().replace(/\s+/g, '_');
-  
-  // Retorno de seguridad por si queda vacío
-  return resultado || 'REPORTE';
+  // Quitar guiones o guiones bajos duplicados
+  return resultado.replace(/_+/g, '_').replace(/-+/g, '-');
 }
 
-// ALGORITMO ADAPTATIVO: Encoge la fuente del subtítulo si el texto unificado excede los límites útiles
+// Ajuste adaptativo dinámico del tamaño de fuente en caliente para evitar desbordes en el PDF
 function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase) {
   var el = document.getElementById(elementoId);
   if (!el) return;
@@ -118,7 +129,6 @@ function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase) {
 // PROCESADOR Y COMPILADOR GENERAL DEL PDF
 function generarPDF() {
   var tipoEvento = document.getElementById('tipoEvento').value;
-  var comboTipoEvento = document.getElementById('tipoEvento');
   var comboSub = document.getElementById('subCategoria');
   
   if (!tipoEvento) {
@@ -130,10 +140,9 @@ function generarPDF() {
     return;
   }
 
-  var tipoEventoTexto = comboTipoEvento.options[comboTipoEvento.selectedIndex].text;
-  var subCategoriaTexto = comboSub.options[comboSub.selectedIndex].text;
-  var nombreInstitucion = document.getElementById('institucion').value.trim();
-  var distrito          = document.getElementById('distrito').value.trim();
+  var subCategoriaTexto = comboSub.value;
+  var nombreInstitucion = document.getElementById('institucion').value.trim().toUpperCase();
+  var distrito          = document.getElementById('distrito').value.trim().toUpperCase();
   var fecha             = formatearFecha(document.getElementById('fecha').value);
 
   if (!nombreInstitucion || !distrito || !fecha) {
@@ -145,19 +154,19 @@ function generarPDF() {
     return;
   }
 
-  var titulo = tituloHTML(tipoEvento, tipoEventoTexto);
+  var titulo = obtenerTituloPDF(tipoEvento);
   
-  // Unificación del texto para el subtítulo impreso (Ej: SEDAPAL LA ATARJEA – EL AGUSTINO)
+  // Formatear subtítulo visual: "SUBCATEGORÍA NOMBRE – DISTRITO"
   var subtituloFormateado = (subCategoriaTexto + ' ' + nombreInstitucion + ' – ' + distrito).toUpperCase();
 
-  // Carga de datos reales en la estructura oculta (Página 1)
+  // Cargar datos en la plantilla (Página 1)
   document.getElementById('pdf-titulo-1').innerHTML = titulo;
   document.getElementById('pdf-institucion-1').textContent = subtituloFormateado;
   document.getElementById('pdf-fecha-1').textContent = fecha;
   document.getElementById('pdf-foto-1').src = imagenes[1];
   document.getElementById('pdf-foto-2').src = imagenes[2];
 
-  // Carga de datos reales en la estructura oculta (Página 2)
+  // Cargar datos en la plantilla (Página 2)
   document.getElementById('pdf-titulo-2').innerHTML = titulo;
   document.getElementById('pdf-institucion-2').textContent = subtituloFormateado;
   document.getElementById('pdf-fecha-2').textContent = fecha;
@@ -167,7 +176,7 @@ function generarPDF() {
   var template = document.getElementById('pdf-template');
   template.style.cssText = 'display:block; position:fixed; top:0; left:0; z-index:9999;';
 
-  // Ajuste en caliente para prevenir saltos de línea destructivos
+  // Aplicar algoritmo de fuente adaptativa para evitar desbordes de texto
   ajustarFuenteAdaptativa('pdf-institucion-1', 25);
   ajustarFuenteAdaptativa('pdf-institucion-2', 25);
 
@@ -176,7 +185,6 @@ function generarPDF() {
 
   function capturarPagina(index) {
     if (index >= paginas.length) {
-      // Uso directo del nombre limpio libre de prefijos genéricos y robusto ante SEDAPAL
       var nombreCorto = obtenerNombreCorto(nombreInstitucion, subCategoriaTexto);
       var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCorto + '.pdf';
       
