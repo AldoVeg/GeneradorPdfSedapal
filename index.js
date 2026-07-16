@@ -1,33 +1,40 @@
 // Memoria en caché interna para almacenar las imágenes en Base64
 var imagenes = { 1: null, 2: null, 3: null, 4: null };
 
-// Opciones dinámicas para el segundo combo mapeadas de forma estricta
+// Opciones dinámicas ordenadas meticulosamente por rango de relevancia y jerarquía
 var subCategoriasPorEvento = {
-  adultos: ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "COMUNIDAD", "ASOCIACIÓN"],
-  instituciones: ["INSTITUCIÓN EDUCATIVA", "COLEGIO", "NIDO"]
+  visita_ie: ["INSTITUCIÓN EDUCATIVA", "COLEGIO"],
+  visita_adultos: ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA"],
+  taller_ie: ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "INSTITUTO", "INSTITUCIÓN EDUCATIVA", "COLEGIO", "CEBA", "INICIAL", "NIDO"],
+  taller_empresas: ["SEDAPAL", "MUNICIPALIDAD", "UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "CENTRO COMERCIAL", "MERCADO", "URBANIZACIÓN", "ASOCIACIÓN", "A.H."]
 };
 
 // Escuchador dinámico para controlar el intercambio de subcategorías en la misma fila
 document.getElementById('tipoEvento').addEventListener('change', function () {
   var tipo = this.value;
   var comboSub = document.getElementById('subCategoria');
+  var inputNombre = document.getElementById('institucion');
   
   // Limpieza total del combo dependiente
   comboSub.innerHTML = '<option value="" disabled selected>-- Selecciona Tipo --</option>';
   comboSub.disabled = false;
+  
+  // Habilitar cuadro de texto para el nombre propio
+  inputNombre.disabled = false;
+  inputNombre.placeholder = "Escribe el nombre aquí...";
 
-  // Inyección selectiva de opciones correspondientes
+  // Inyección selectiva de opciones correspondientes en mayúsculas
   if (subCategoriasPorEvento[tipo]) {
     subCategoriasPorEvento[tipo].forEach(function (opcion) {
       var opt = document.createElement('option');
-      opt.value = opcion.toLowerCase();
-      opt.textContent = opcion; // Viene formateado directamente en mayúsculas
+      opt.value = opcion; 
+      opt.textContent = opcion;
       comboSub.appendChild(opt);
     });
   }
 });
 
-// Monitor silencioso de carga de archivos y actualización de miniaturas de control
+// Monitor de carga de archivos y actualización de miniaturas de control
 [1, 2, 3, 4].forEach(function (n) {
   var input = document.getElementById('foto' + n);
   var formPreview = document.getElementById('form-preview' + n);
@@ -55,21 +62,41 @@ function formatearFecha(valor) {
   return partes[2] + '.' + partes[1] + '.' + partes[0];
 }
 
-// Devuelve las cadenas del título en SINGULAR según el tipo de evento seleccionado
+// Devuelve las cadenas del título en SINGULAR y MAYÚSCULAS según el tipo de evento seleccionado
 function tituloHTML(valor, texto) {
-  if (valor === 'instituciones') {
+  if (valor === 'visita_ie') {
     return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
+  }
+  if (valor === 'visita_adultos') {
+    return 'VISITA DE ADULTOS A LA PLANTA';
+  }
+  if (valor === 'taller_ie') {
+    return 'TALLER A INSTITUCIONES<br>EDUCATIVAS';
+  }
+  if (valor === 'taller_empresas') {
+    return 'TALLER A EMPRESAS';
   }
   return (texto || '').toUpperCase();
 }
 
-// FILTRO DE BLINDAJE ABSOLUTO: Al estar separados en el formulario, el nombre corto nace limpio
-function obtenerNombreCorto(nombreCompleto) {
+// FILTRO DE BLINDAJE ABSOLUTO: Nombres limpios sin prefijos ni palabras repetidas. 
+// Además, si la subcategoría es SEDAPAL, se limpia del nombre del archivo final para evitar redundancias.
+function obtenerNombreCorto(nombreCompleto, subCategoriaSeleccionada) {
   var texto = nombreCompleto.toUpperCase();
-  // Limpieza total de caracteres extraños o tildes corruptas móviles
-  texto = texto.replace(/[^A-Z0-9ÃÃ‰ÃÃ“ÃšÃ‘\s]/g, '');
-  // Reemplazo directo a estructura unificada por guiones bajos
-  return texto.trim().replace(/\s+/g, '_');
+  var sub = (subCategoriaSeleccionada || '').toUpperCase();
+  
+  if (sub === 'SEDAPAL') {
+    // Si la subcategoría es SEDAPAL, removemos la palabra "SEDAPAL" si fue tipeada de nuevo en el cuadro libre
+    texto = texto.replace(/\bSEDAPAL\b/gi, '');
+  }
+  
+  // Limpieza general de caracteres extraños o tildes corruptas móviles
+  texto = texto.replace(/[^A-Z0-9\s]/g, '');
+  
+  var resultado = texto.trim().replace(/\s+/g, '_');
+  
+  // Retorno de seguridad por si queda vacío
+  return resultado || 'REPORTE';
 }
 
 // ALGORITMO ADAPTATIVO: Encoge la fuente del subtítulo si el texto unificado excede los límites útiles
@@ -119,7 +146,8 @@ function generarPDF() {
   }
 
   var titulo = tituloHTML(tipoEvento, tipoEventoTexto);
-  // Unificación del texto para el subtítulo impreso en la hoja (Ej: COLEGIO SANTA ROSA – LOS OLIVOS)
+  
+  // Unificación del texto para el subtítulo impreso (Ej: SEDAPAL LA ATARJEA – EL AGUSTINO)
   var subtituloFormateado = (subCategoriaTexto + ' ' + nombreInstitucion + ' – ' + distrito).toUpperCase();
 
   // Carga de datos reales en la estructura oculta (Página 1)
@@ -148,8 +176,8 @@ function generarPDF() {
 
   function capturarPagina(index) {
     if (index >= paginas.length) {
-      // Uso directo del nombre limpio libre de prefijos genéricos
-      var nombreCorto = obtenerNombreCorto(nombreInstitucion);
+      // Uso directo del nombre limpio libre de prefijos genéricos y robusto ante SEDAPAL
+      var nombreCorto = obtenerNombreCorto(nombreInstitucion, subCategoriaTexto);
       var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCorto + '.pdf';
       
       doc.save(nombreFinalArchivo);
