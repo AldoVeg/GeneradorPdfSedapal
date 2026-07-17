@@ -99,16 +99,20 @@ document.addEventListener('DOMContentLoaded', function() {
     return partes[2] + '.' + partes[1] + '.' + partes[0];
   }
 
+  // PRECISIÓN DEL TÍTULO EN 1 O 2 FILAS APLICADA AQUÍ:
   function obtenerTituloPDF(valor) {
+    // ÚNICA opción en 2 filas (lleva <br>)
     if (valor === 'VISITA_IE') return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
+    
+    // Todas las demás opciones en una sola fila (sin <br>)
     if (valor === 'VISITA_ADULTOS') return 'VISITA DE ADULTOS A LA PLANTA';
-    if (valor === 'TALLER_IE') return 'TALLER A INSTITUCIONES<br>EDUCATIVAS';
+    if (valor === 'TALLER_IE') return 'TALLER A INSTITUCIONES EDUCATIVAS';
     if (valor === 'TALLER_EMPRESAS') return 'TALLER A EMPRESAS';
-    if (valor === 'TALLER_COMUNIDAD') return 'TALLER A LA<br>COMUNIDAD';
+    if (valor === 'TALLER_COMUNIDAD') return 'TALLER A LA COMUNIDAD';
     return '';
   }
 
-  // NUEVO: Limpia todo prefijo y usa estrictamente el texto libre ingresado.
+  // Limpia todo prefijo y usa estrictamente el texto libre ingresado para guardar
   function obtenerNombreCortoArchivo(nombreIngresado) {
     var texto = nombreIngresado.toUpperCase().trim();
     // Limpia caracteres raros dejando solo letras, números, espacios y guiones
@@ -160,13 +164,12 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    // Aporte de fluidez UX: Bloquear botón para evitar clics múltiples durante la generación
+    // Bloquear botón para evitar clics múltiples durante la generación
     var originalBtnText = btnGenerar.textContent;
     btnGenerar.textContent = 'Generando PDF... Espere';
     btnGenerar.disabled = true;
 
     var titulo = obtenerTituloPDF(tipoVal);
-    // El subtitulo visual dentro del PDF sí lleva la subcategoría
     var subtituloFormateado = (subCategoriaTexto + ' ' + nombreInstitucion + ' – ' + distrito).toUpperCase();
 
     document.getElementById('pdf-titulo-1').innerHTML = titulo;
@@ -193,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function capturarPagina(index) {
       if (index >= paginas.length) {
         
-        // AQUÍ SE CUMPLE LA REGLA: Nombre de archivo puramente con el texto libre.
+        // Nombre de archivo puramente con el texto libre ingresado
         var nombreCortoLimpio = obtenerNombreCortoArchivo(nombreInstitucion);
         var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCortoLimpio + '.pdf';
         
@@ -225,7 +228,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // Iniciar captura asíncrona pero con un ligero delay para asegurar redibujado de la vista (UX celular)
     setTimeout(function() {
       capturarPagina(0);
     }, 100);
