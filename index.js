@@ -3,12 +3,13 @@ document.addEventListener('DOMContentLoaded', function() {
   // 1. Memoria caché para imágenes
   var imagenes = { 1: null, 2: null, 3: null, 4: null };
 
-  // 2. Diccionario de Subcategorías (Sincronización exacta con los 'value' del HTML)
+  // 2. Diccionario de Subcategorías reorganizado
   var subCategoriasPorEvento = {
     "VISITA_IE": ["INSTITUCIÓN EDUCATIVA", "COLEGIO"],
     "VISITA_ADULTOS": ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA"],
     "TALLER_IE": ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "INSTITUTO", "INSTITUCIÓN EDUCATIVA", "COLEGIO", "CEBA", "INICIAL", "NIDO"],
-    "TALLER_EMPRESAS": ["SEDAPAL", "MUNICIPALIDAD", "UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "CENTRO COMERCIAL", "MERCADO", "URBANIZACIÓN", "ASOCIACIÓN", "A.H."]
+    "TALLER_EMPRESAS": ["SEDAPAL", "MUNICIPALIDAD", "UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "CENTRO COMERCIAL"],
+    "TALLER_COMUNIDAD": ["MERCADO", "URBANIZACIÓN", "ASOCIACIÓN", "A.H."]
   };
 
   // 3. Captura segura de Elementos del DOM
@@ -17,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var inputInstitucion = document.getElementById('institucion');
   var inputDistrito = document.getElementById('distrito');
   var inputFecha = document.getElementById('fecha');
-  var btnGenerar = document.querySelector('.btn-generar');
+  var btnGenerar = document.getElementById('btnGenerar');
 
   // 4. Forzar mayúsculas en caliente (Blindaje visual)
   if (inputInstitucion) {
@@ -36,7 +37,6 @@ document.addEventListener('DOMContentLoaded', function() {
     tipoEvento.addEventListener('change', function () {
       var tipo = this.value;
       
-      // Control de existencia para evitar errores
       if (!comboSub || !inputInstitucion) return;
 
       // Reset reactivo
@@ -59,6 +59,13 @@ document.addEventListener('DOMContentLoaded', function() {
         inputInstitucion.disabled = true;
         inputInstitucion.placeholder = "Selecciona tipo de evento primero";
       }
+    });
+  }
+
+  // Aporte de fluidez UX: Auto-enfocar el cuadro de texto al seleccionar subcategoría
+  if (comboSub && inputInstitucion) {
+    comboSub.addEventListener('change', function() {
+      inputInstitucion.focus();
     });
   }
 
@@ -97,28 +104,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (valor === 'VISITA_ADULTOS') return 'VISITA DE ADULTOS A LA PLANTA';
     if (valor === 'TALLER_IE') return 'TALLER A INSTITUCIONES<br>EDUCATIVAS';
     if (valor === 'TALLER_EMPRESAS') return 'TALLER A EMPRESAS';
+    if (valor === 'TALLER_COMUNIDAD') return 'TALLER A LA<br>COMUNIDAD';
     return '';
   }
 
-  function obtenerNombreCorto(nombreCompleto, subCategoriaSeleccionada) {
-    var texto = nombreCompleto.toUpperCase().trim();
-    var sub = (subCategoriaSeleccionada || '').toUpperCase().trim();
-    
+  // NUEVO: Limpia todo prefijo y usa estrictamente el texto libre ingresado.
+  function obtenerNombreCortoArchivo(nombreIngresado) {
+    var texto = nombreIngresado.toUpperCase().trim();
+    // Limpia caracteres raros dejando solo letras, números, espacios y guiones
     texto = texto.replace(/[^A-Z0-9\s-_]/g, '');
-    var resultado = '';
-    
-    if (sub === 'SEDAPAL') {
-      var textoLimpio = texto.replace(/\bSEDAPAL\b/gi, '').trim();
-      if (textoLimpio === '') {
-        resultado = 'SEDAPAL';
-      } else {
-        resultado = 'SEDAPAL_' + textoLimpio.replace(/\s+/g, '_');
-      }
-    } else {
-      resultado = sub + '_' + texto.replace(/\s+/g, '_');
-    }
-    
-    return resultado.replace(/_+/g, '_').replace(/-+/g, '-');
+    // Reemplaza los espacios en blanco por guiones bajos
+    return texto.replace(/\s+/g, '_').replace(/_+/g, '_').replace(/-+/g, '-');
   }
 
   function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase) {
@@ -164,7 +160,13 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    // Aporte de fluidez UX: Bloquear botón para evitar clics múltiples durante la generación
+    var originalBtnText = btnGenerar.textContent;
+    btnGenerar.textContent = 'Generando PDF... Espere';
+    btnGenerar.disabled = true;
+
     var titulo = obtenerTituloPDF(tipoVal);
+    // El subtitulo visual dentro del PDF sí lleva la subcategoría
     var subtituloFormateado = (subCategoriaTexto + ' ' + nombreInstitucion + ' – ' + distrito).toUpperCase();
 
     document.getElementById('pdf-titulo-1').innerHTML = titulo;
@@ -190,11 +192,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function capturarPagina(index) {
       if (index >= paginas.length) {
-        var nombreCorto = obtenerNombreCorto(nombreInstitucion, subCategoriaTexto);
-        var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCorto + '.pdf';
+        
+        // AQUÍ SE CUMPLE LA REGLA: Nombre de archivo puramente con el texto libre.
+        var nombreCortoLimpio = obtenerNombreCortoArchivo(nombreInstitucion);
+        var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCortoLimpio + '.pdf';
         
         doc.save(nombreFinalArchivo);
         template.style.cssText = 'display:none;'; 
+        
+        // Restaurar estado del botón
+        btnGenerar.textContent = originalBtnText;
+        btnGenerar.disabled = false;
         return;
       }
 
@@ -209,10 +217,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (index > 0) doc.addPage();
         doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
         capturarPagina(index + 1);
+      }).catch(function(error) {
+        alert("Ocurrió un error procesando el PDF. Revisa las imágenes.");
+        btnGenerar.textContent = originalBtnText;
+        btnGenerar.disabled = false;
+        template.style.cssText = 'display:none;'; 
       });
     }
 
-    capturarPagina(0);
+    // Iniciar captura asíncrona pero con un ligero delay para asegurar redibujado de la vista (UX celular)
+    setTimeout(function() {
+      capturarPagina(0);
+    }, 100);
   }
 
   // 9. Asignar Evento al Botón Generar
