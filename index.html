@@ -14,6 +14,7 @@
 
     <hr />
 
+    <!-- Tipo de evento -->
     <div class="grupo">
       <label for="tipoEvento">Tipo de Evento</label>
       <select id="tipoEvento">
@@ -22,9 +23,11 @@
         <option value="VISITA_ADULTOS">VISITA DE ADULTOS A LA PLANTA</option>
         <option value="TALLER_IE">TALLER A INSTITUCIONES EDUCATIVAS</option>
         <option value="TALLER_EMPRESAS">TALLER A EMPRESAS</option>
+        <option value="TALLER_COMUNIDAD">TALLER A LA COMUNIDAD</option>
       </select>
     </div>
 
+    <!-- Fila Compartida: Subcategoría + Nombre -->
     <div class="grupo">
       <label for="institucion">Institución o Entidad</label>
       <div class="fila-compartida-dinamica">
@@ -39,6 +42,7 @@
       </div>
     </div>
 
+    <!-- Distrito y Fecha -->
     <div class="grupo fila-compartida">
       <div class="subgrupo">
         <label for="distrito">Distrito</label>
@@ -52,6 +56,7 @@
 
     <hr />
 
+    <!-- Fotos y Miniaturas -->
     <div class="grupo">
       <label>Fotos (4 en total — 2 por página)</label>
       <div class="fotos-grid">
@@ -78,10 +83,12 @@
       </div>
     </div>
 
-    <button class="btn-generar">Generar PDF</button>
+    <button class="btn-generar" id="btnGenerar">Generar PDF</button>
   </div>
 
+  <!-- PLANTILLA MOTOR PDF -->
   <div id="pdf-template">
+    <!-- Página 1 -->
     <div class="pdf-pagina">
       <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
       <div class="pdf-header-block">
@@ -93,6 +100,7 @@
       <img class="pdf-foto" id="pdf-foto-2" />
     </div>
 
+    <!-- Página 2 -->
     <div class="pdf-pagina">
       <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
       <div class="pdf-header-block">
