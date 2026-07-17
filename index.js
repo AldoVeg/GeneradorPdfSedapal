@@ -99,9 +99,9 @@ document.addEventListener('DOMContentLoaded', function() {
     return partes[2] + '.' + partes[1] + '.' + partes[0];
   }
 
-  // PRECISIÓN DEL TÍTULO EN 1 O 2 FILAS APLICADA AQUÍ:
+  // PRECISIÓN EXACTA AJUSTADA AQUÍ:
   function obtenerTituloPDF(valor) {
-    // ÚNICA opción en 2 filas (lleva <br>)
+    // ÚNICA opción en 2 filas (con <br>)
     if (valor === 'VISITA_IE') return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
     
     // Todas las demás opciones en una sola fila (sin <br>)
@@ -112,18 +112,24 @@ document.addEventListener('DOMContentLoaded', function() {
     return '';
   }
 
-  // Limpia todo prefijo y usa estrictamente el texto libre ingresado para guardar
-  function obtenerNombreCortoArchivo(nombreIngresado) {
+  // Guarda únicamente con el texto libre ingresado por el operario
+  function obtenerNombreShortFile(nombreIngresado) {
     var texto = nombreIngresado.toUpperCase().trim();
-    // Limpia caracteres raros dejando solo letras, números, espacios y guiones
     texto = texto.replace(/[^A-Z0-9\s-_]/g, '');
-    // Reemplaza los espacios en blanco por guiones bajos
     return texto.replace(/\s+/g, '_').replace(/_+/g, '_').replace(/-+/g, '-');
   }
 
-  function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase) {
+  // ALGORITMO ROBUSTO DE FUENTE ADAPTATIVA (Previene desbordes y wraps inesperados)
+  function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase, forzarUnaFila) {
     var el = document.getElementById(elementoId);
     if (!el) return;
+    
+    // Forzado estricto de una fila para evitar saltos automáticos no deseados
+    if (forzarUnaFila) {
+      el.style.whiteSpace = 'nowrap';
+    } else {
+      el.style.whiteSpace = 'normal';
+    }
     
     el.style.fontSize = tamañoMaximoBase + 'px';
     var anchoContenedor = el.parentElement.clientWidth || 682; 
@@ -164,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    // Bloquear botón para evitar clics múltiples durante la generación
+    // Bloquear botón para evitar clics dobles molestos
     var originalBtnText = btnGenerar.textContent;
     btnGenerar.textContent = 'Generando PDF... Espere';
     btnGenerar.disabled = true;
@@ -172,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var titulo = obtenerTituloPDF(tipoVal);
     var subtituloFormateado = (subCategoriaTexto + ' ' + nombreInstitucion + ' – ' + distrito).toUpperCase();
 
+    // Rellenar plantillas
     document.getElementById('pdf-titulo-1').innerHTML = titulo;
     document.getElementById('pdf-institucion-1').textContent = subtituloFormateado;
     document.getElementById('pdf-fecha-1').textContent = fecha;
@@ -184,11 +191,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('pdf-foto-3').src = imagenes[3];
     document.getElementById('pdf-foto-4').src = imagenes[4];
 
+    // Activar plantilla de forma invisible para que html2canvas capture todo sin destellos en el celular
     var template = document.getElementById('pdf-template');
-    template.style.cssText = 'display:block; position:fixed; top:0; left:0; z-index:9999;';
+    template.style.cssText = 'display:block; position:fixed; top:0; left:0; z-index:9999; opacity:0.01; pointer-events:none;';
 
-    ajustarFuenteAdaptativa('pdf-institucion-1', 25);
-    ajustarFuenteAdaptativa('pdf-institucion-2', 25);
+    // Aplicar ajuste adaptativo inteligente a los subtítulos (siempre 1 sola fila)
+    ajustarFuenteAdaptativa('pdf-institucion-1', 25, true);
+    ajustarFuenteAdaptativa('pdf-institucion-2', 25, true);
+
+    // Aplicar ajuste adaptativo inteligente a los títulos según la regla fundamental
+    var esDosFilas = (tipoVal === 'VISITA_IE');
+    ajustarFuenteAdaptativa('pdf-titulo-1', 38, !esDosFilas);
+    ajustarFuenteAdaptativa('pdf-titulo-2', 38, !esDosFilas);
 
     var paginas = Array.from(document.querySelectorAll('.pdf-pagina'));
     var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
@@ -196,14 +210,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function capturarPagina(index) {
       if (index >= paginas.length) {
         
-        // Nombre de archivo puramente con el texto libre ingresado
-        var nombreCortoLimpio = obtenerNombreCortoArchivo(nombreInstitucion);
+        // Guardar estrictamente con el nombre ingresado (sin prefijos)
+        var nombreCortoLimpio = obtenerNombreShortFile(nombreInstitucion);
         var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCortoLimpio + '.pdf';
         
         doc.save(nombreFinalArchivo);
         template.style.cssText = 'display:none;'; 
         
-        // Restaurar estado del botón
+        // Restaurar estado de control del botón
         btnGenerar.textContent = originalBtnText;
         btnGenerar.disabled = false;
         return;
@@ -221,16 +235,17 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
         capturarPagina(index + 1);
       }).catch(function(error) {
-        alert("Ocurrió un error procesando el PDF. Revisa las imágenes.");
+        alert("Ocurrió un error inesperado al procesar las imágenes.");
         btnGenerar.textContent = originalBtnText;
         btnGenerar.disabled = false;
         template.style.cssText = 'display:none;'; 
       });
     }
 
+    // Delay de estabilidad para asegurar el flujo móvil
     setTimeout(function() {
       capturarPagina(0);
-    }, 100);
+    }, 120);
   }
 
   // 9. Asignar Evento al Botón Generar
