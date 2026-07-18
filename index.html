@@ -1,54 +1,120 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNIFICADOR SEDAPAL</title>
-    <link rel="stylesheet" href="styles.css">
-    
-    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador de PDF - Sedapal</title>
+  <link rel="stylesheet" href="index.css" />
 </head>
 <body>
 
-    <header>
-        <h1>UNIFICADOR SEDAPAL</h1>
-    </header>
+  <div class="container">
+    <h1>Generador de Informe PDF</h1>
+    <p class="subtitulo">Completa los datos y selecciona las fotos para generar el documento.</p>
 
-    <main>
-        <div id="drop-zone" class="drop-zone" onclick="document.getElementById('file-input').click()">
-            <input type="file" id="file-input" multiple accept="application/pdf">
-        </div>
+    <hr />
 
-        <div class="controls-panel">
-            <label class="control-item">
-                <input type="checkbox" id="chk-foleo">
-                Foleo
-            </label>
-            
-            <label class="control-item">
-                Iniciar en:
-                <input type="number" id="folio-start" value="1" min="1">
-            </label>
-
-            <label class="control-item">
-                <input type="checkbox" id="chk-optimize" checked>
-                Optimizar Peso
-            </label>
-        </div>
-
-        <div id="workspace" class="workspace"></div>
-
-        <button id="btn-generate" class="btn-primary" disabled>Unificar y Descargar</button>
-    </main>
-
-    <div id="loading-overlay" class="overlay hidden">
-        <div class="loader"></div>
-        <div id="loading-text">Procesando...</div>
-        <progress id="progress-bar" value="0" max="100" class="hidden"></progress>
+    <!-- Tipo de evento -->
+    <div class="grupo">
+      <label for="tipoEvento">Tipo de Evento</label>
+      <select id="tipoEvento">
+        <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
+        <option value="VISITA_IE">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
+        <option value="VISITA_ADULTOS">VISITA DE ADULTOS A LA PLANTA</option>
+        <option value="TALLER_IE">TALLER A INSTITUCIONES EDUCATIVAS</option>
+        <option value="TALLER_EMPRESAS">TALLER A EMPRESAS</option>
+        <option value="TALLER_COMUNIDAD">TALLER A LA COMUNIDAD</option>
+      </select>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Fila Compartida: Subcategoría + Nombre -->
+    <div class="grupo">
+      <label for="institucion">Institución o Entidad</label>
+      <div class="fila-compartida-dinamica">
+        <div class="col-subcategoria">
+          <select id="subCategoria" disabled>
+            <option value="" disabled selected>-- Tipo --</option>
+          </select>
+        </div>
+        <div class="col-nombre">
+          <input type="text" id="institucion" placeholder="Selecciona tipo de evento primero" disabled />
+        </div>
+      </div>
+    </div>
+
+    <!-- Distrito y Fecha -->
+    <div class="grupo fila-compartida">
+      <div class="subgrupo">
+        <label for="distrito">Distrito</label>
+        <input type="text" id="distrito" placeholder="Ej: Los Olivos" />
+      </div>
+      <div class="subgrupo">
+        <label for="fecha">Fecha</label>
+        <input type="date" id="fecha" />
+      </div>
+    </div>
+
+    <hr />
+
+    <!-- Fotos y Miniaturas -->
+    <div class="grupo">
+      <label>Fotos (4 en total — 2 por página)</label>
+      <div class="fotos-grid">
+        <div class="foto-item">
+          <label for="foto1">Foto 1 (Página 1)</label>
+          <input type="file" id="foto1" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview1" class="miniatura-control" /></div>
+        </div>
+        <div class="foto-item">
+          <label for="foto2">Foto 2 (Página 1)</label>
+          <input type="file" id="foto2" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview2" class="miniatura-control" /></div>
+        </div>
+        <div class="foto-item">
+          <label for="foto3">Foto 3 (Página 2)</label>
+          <input type="file" id="foto3" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview3" class="miniatura-control" /></div>
+        </div>
+        <div class="foto-item">
+          <label for="foto4">Foto 4 (Página 2)</label>
+          <input type="file" id="foto4" accept="image/*" />
+          <div class="wrapper-miniatura"><img id="form-preview4" class="miniatura-control" /></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-generar" id="btnGenerar">Generar PDF</button>
+  </div>
+
+  <!-- PLANTILLA MOTOR PDF -->
+  <div id="pdf-template">
+    <!-- Página 1 -->
+    <div class="pdf-pagina">
+      <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
+      <div class="pdf-header-block">
+        <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
+        <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
+        <p class="pdf-fecha" id="pdf-fecha-1"></p>
+      </div>
+      <img class="pdf-foto" id="pdf-foto-1" />
+      <img class="pdf-foto" id="pdf-foto-2" />
+    </div>
+
+    <!-- Página 2 -->
+    <div class="pdf-pagina">
+      <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
+      <div class="pdf-header-block">
+        <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
+        <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
+        <p class="pdf-fecha" id="pdf-fecha-2"></p>
+      </div>
+      <img class="pdf-foto" id="pdf-foto-3" />
+      <img class="pdf-foto" id="pdf-foto-4" />
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="index.js"></script>
 </body>
 </html>
