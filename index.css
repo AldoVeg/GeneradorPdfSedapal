@@ -1,9 +1,194 @@
-/* ── PLANTILLA PDF (Ocultación segura para html2canvas) ── */
-#pdf-template {
+/* Estilos Base de la Aplicación */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background-color: #f4f7fa;
+  color: #333;
+  padding: 30px 15px;
+}
+
+.container {
+  max-width: 750px;
+  background: #fff;
+  margin: 0 auto;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+header h1 {
+  color: #00529b;
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.subtitulo {
+  color: #666;
+  font-size: 14px;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e9ecef;
+  margin: 25px 0;
+}
+
+.grupo {
+  margin-bottom: 20px;
+  border: none;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #495057;
+}
+
+.label-hint {
+  font-weight: normal;
+  color: #868e96;
+}
+
+input[type="text"], input[type="date"], select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  background-color: #fff;
+}
+
+input[type="text"]:focus, select:focus {
+  border-color: #00529b;
+  box-shadow: 0 0 0 2px rgba(0,82,155,0.15);
+}
+
+input:disabled, select:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+.fila-compartida, .fila-compartida-dinamica {
+  display: flex;
+  gap: 15px;
+}
+
+.col-subcategoria { flex: 0 0 35%; }
+.col-nombre { flex: 1; }
+.subgrupo { flex: 1; }
+
+input[type="text"] {
+  text-transform: uppercase;
+}
+
+.fotos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+input[type="file"] {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.wrapper-miniatura {
+  width: 100%;
+  height: 110px;
+  background: #f8f9fa;
+  border: 1px dashed #ced4da;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.miniatura-control {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
   position: absolute;
+  z-index: 2;
+}
+
+.placeholder-icon {
+  font-size: 24px;
+  color: #adb5bd;
+  z-index: 1;
+}
+
+.btn-generar {
+  width: 100%;
+  padding: 12px;
+  background: #00529b;
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-generar:hover:not(:disabled) { background: #003d73; }
+.btn-generar:disabled { background: #ced4da; cursor: not-allowed; }
+
+/* Overlays y Banners */
+.overlay {
+  position: fixed;
+  top:0; left:0; width:100%; height:100%;
+  background: rgba(255,255,255,0.9);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.hidden { display: none !important; }
+
+.loader-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #00529b;
+  border-radius: 50%;
+  width: 40px; height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.cdn-error-banner {
+  background: #fff5f5;
+  color: #cc1f1f;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+  border-bottom: 2px solid #cc1f1f;
+}
+
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 11000; }
+.toast { background: #333; color: #fff; padding: 12px 20px; margin-bottom: 10px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.toast-error { background: #dc3545; }
+.toast-success { background: #28a745; }
+
+/* ── PLANTILLA PDF (Ocultación y Render Seguro) ── */
+#pdf-template {
+  position: fixed;
   left: -9999px;
   top: -9999px;
-  visibility: hidden;
   background-color: transparent;
 }
 
@@ -17,7 +202,6 @@
   align-items: center;
   overflow: hidden;
   box-sizing: border-box;
-  visibility: visible; /* Reestablece la visibilidad interna para el motor de captura */
 }
 
 .pdf-header-block {
@@ -30,13 +214,15 @@
   margin-bottom: 25px;
 }
 
-/* Optimización para el archivo PNG corporativo */
+/* BLINDAJE LOGO: Eliminación de object-fit para suprimir el cuadro celeste */
 .pdf-logo {
-  max-width: 180px;
-  height: 55px;
+  width: 175px; 
+  height: auto; 
   align-self: flex-start;
   margin-bottom: 5px;
-  object-fit: contain; /* Evita distorsiones en imágenes transparentes */
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
 }
 
 .pdf-titulo {
@@ -56,7 +242,6 @@
   text-transform: uppercase;
   margin-bottom: 6px;
   width: 100%;
-  white-space: nowrap;
 }
 
 .pdf-fecha {
@@ -71,7 +256,9 @@
   height: 370px;
   object-fit: cover;
   border-radius: 6px;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid #dee2e6;
   margin-bottom: 20px;
 }
 .pdf-foto:last-child { margin-bottom: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+.app-footer { text-align: center; margin-top: 20px; color: #868e96; font-size: 12px; }
