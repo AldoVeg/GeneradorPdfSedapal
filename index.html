@@ -8,30 +8,24 @@
   <title>Generador de PDF — SEDAPAL</title>
   <link rel="stylesheet" href="index.css" />
 
-  <!-- CDN html2canvas con fallback -->
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
           onerror="document.getElementById('cdn-error').classList.remove('hidden')"></script>
-  <!-- CDN jsPDF con fallback -->
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
           onerror="document.getElementById('cdn-error').classList.remove('hidden')"></script>
-  <!-- JS principal -->
   <script defer src="index.js"></script>
 </head>
 <body>
 
-  <!-- Banner de error de CDN -->
   <div id="cdn-error" class="cdn-error-banner hidden" role="alert">
     <span>⚠️ Error de red: no se pudieron cargar las librerías externas. Verifica tu conexión e intenta de nuevo.</span>
   </div>
 
-  <!-- Overlay de carga -->
   <div id="loading-overlay" class="overlay hidden" role="status" aria-live="polite">
     <div class="loader-spinner"></div>
     <p id="loading-text">Generando PDF...</p>
     <progress id="progress-bar" value="0" max="100" class="hidden"></progress>
   </div>
 
-  <!-- Contenedor de toasts -->
   <div id="toast-container" class="toast-container" aria-live="assertive"></div>
 
   <div class="container">
@@ -42,7 +36,6 @@
 
     <hr />
 
-    <!-- Tipo de evento -->
     <fieldset class="grupo">
       <legend class="sr-only">Tipo de evento</legend>
       <label for="tipoEvento">Tipo de Evento</label>
@@ -56,7 +49,6 @@
       </select>
     </fieldset>
 
-    <!-- Institución / Entidad -->
     <div class="grupo">
       <label for="institucion">Institución o Entidad</label>
       <div class="fila-compartida-dinamica">
@@ -72,7 +64,6 @@
       </div>
     </div>
 
-    <!-- Distrito y Fecha -->
     <div class="grupo fila-compartida">
       <div class="subgrupo">
         <label for="distrito">Distrito</label>
@@ -87,7 +78,6 @@
 
     <hr />
 
-    <!-- Fotos -->
     <fieldset class="grupo">
       <legend>Fotos <small>(4 en total — 2 por página)</small></legend>
       <div class="fotos-grid">
@@ -131,15 +121,11 @@
     </button>
   </div>
 
-  <!-- Canvas offscreen para preprocesamiento de imágenes (no visible) -->
   <canvas id="offscreen-canvas" style="display:none;"></canvas>
 
-  <!-- PLANTILLA MOTOR PDF -->
   <div id="pdf-template" aria-hidden="true">
-    <!-- Página 1 -->
     <div class="pdf-pagina" data-page="1">
-      <img class="pdf-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Crect width='200' height='60' fill='%2300529b' rx='4'/%3E%3Ctext x='100' y='38' text-anchor='middle' fill='white' font-family='Arial,sans-serif' font-weight='bold' font-size='22'%3ESEDAPAL%3C/text%3E%3C/svg%3E"
-           alt="Logo Sedapal" width="130" height="39" />
+      <img class="pdf-logo" src="logosedapal-removebg-preview.png" alt="Logo Sedapal v2" />
       <div class="pdf-header-block">
         <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
         <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
@@ -149,10 +135,8 @@
       <img class="pdf-foto" id="pdf-foto-2" alt="Foto 2" />
     </div>
 
-    <!-- Página 2 -->
     <div class="pdf-pagina" data-page="2">
-      <img class="pdf-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Crect width='200' height='60' fill='%2300529b' rx='4'/%3E%3Ctext x='100' y='38' text-anchor='middle' fill='white' font-family='Arial,sans-serif' font-weight='bold' font-size='22'%3ESEDAPAL%3C/text%3E%3C/svg%3E"
-           alt="Logo Sedapal" width="130" height="39" />
+      <img class="pdf-logo" src="logosedapal-removebg-preview.png" alt="Logo Sedapal v2" />
       <div class="pdf-header-block">
         <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
         <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
