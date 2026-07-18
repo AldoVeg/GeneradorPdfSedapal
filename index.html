@@ -123,10 +123,14 @@
 
   <canvas id="offscreen-canvas" style="display:none;"></canvas>
 
-  <!-- PLANTILLA MOTOR PDF -->
+  <!-- PLANTILLA MOTOR PDF (Rutas de Logotipo Corregidas a logo/) -->
   <div id="pdf-template" aria-hidden="true">
     <div class="pdf-pagina" data-page="1">
-      <img class="pdf-logo" src="logosedapal-removebg-preview.png" alt="Logo Sedapal v2" />
+      <img class="pdf-logo" 
+           src="logo/logosedapal-removebg-preview.png" 
+           alt="Logo Sedapal v2" 
+           onerror="console.error('Error Crítico: No se encontró el logo institucional en logo/.'); alert('⚠️ Alerta del Sistema: El logotipo corporativo en la ruta [logo/logosedapal-removebg-preview.png] no se pudo cargar. El PDF podría emitirse sin cabecera oficial.');" />
+      
       <div class="pdf-header-block">
         <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
         <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
@@ -137,7 +141,11 @@
     </div>
 
     <div class="pdf-pagina" data-page="2">
-      <img class="pdf-logo" src="logosedapal-removebg-preview.png" alt="Logo Sedapal v2" />
+      <img class="pdf-logo" 
+           src="logo/logosedapal-removebg-preview.png" 
+           alt="Logo Sedapal v2" 
+           onerror="console.error('Error Crítico: No se encontró el logo institucional en logo/.');" />
+      
       <div class="pdf-header-block">
         <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
         <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
