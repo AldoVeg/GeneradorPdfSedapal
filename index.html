@@ -3,21 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Generador de PDF - Sedapal</title>
+  <meta name="description" content="Generador de informes PDF para SEDAPAL — visitas y talleres" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <title>Generador de PDF — SEDAPAL</title>
   <link rel="stylesheet" href="index.css" />
+
+  <!-- CDN html2canvas con fallback -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+          onerror="document.getElementById('cdn-error').classList.remove('hidden')"></script>
+  <!-- CDN jsPDF con fallback -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+          onerror="document.getElementById('cdn-error').classList.remove('hidden')"></script>
+  <!-- JS principal -->
+  <script defer src="index.js"></script>
 </head>
 <body>
 
+  <!-- Banner de error de CDN -->
+  <div id="cdn-error" class="cdn-error-banner hidden" role="alert">
+    <span>⚠️ Error de red: no se pudieron cargar las librerías externas. Verifica tu conexión e intenta de nuevo.</span>
+  </div>
+
+  <!-- Overlay de carga -->
+  <div id="loading-overlay" class="overlay hidden" role="status" aria-live="polite">
+    <div class="loader-spinner"></div>
+    <p id="loading-text">Generando PDF...</p>
+    <progress id="progress-bar" value="0" max="100" class="hidden"></progress>
+  </div>
+
+  <!-- Contenedor de toasts -->
+  <div id="toast-container" class="toast-container" aria-live="assertive"></div>
+
   <div class="container">
-    <h1>Generador de Informe PDF</h1>
-    <p class="subtitulo">Completa los datos y selecciona las fotos para generar el documento.</p>
+    <header>
+      <h1>Generador de Informe PDF</h1>
+      <p class="subtitulo">Completa los datos y selecciona las fotos para generar el documento.</p>
+    </header>
 
     <hr />
 
     <!-- Tipo de evento -->
-    <div class="grupo">
+    <fieldset class="grupo">
+      <legend class="sr-only">Tipo de evento</legend>
       <label for="tipoEvento">Tipo de Evento</label>
-      <select id="tipoEvento">
+      <select id="tipoEvento" required>
         <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
         <option value="VISITA_IE">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
         <option value="VISITA_ADULTOS">VISITA DE ADULTOS A LA PLANTA</option>
@@ -25,19 +54,20 @@
         <option value="TALLER_EMPRESAS">TALLER A EMPRESAS</option>
         <option value="TALLER_COMUNIDAD">TALLER A LA COMUNIDAD</option>
       </select>
-    </div>
+    </fieldset>
 
-    <!-- Fila Compartida: Subcategoría + Nombre -->
+    <!-- Institución / Entidad -->
     <div class="grupo">
       <label for="institucion">Institución o Entidad</label>
       <div class="fila-compartida-dinamica">
         <div class="col-subcategoria">
-          <select id="subCategoria" disabled>
+          <select id="subCategoria" disabled aria-label="Tipo de institución">
             <option value="" disabled selected>-- Tipo --</option>
           </select>
         </div>
         <div class="col-nombre">
-          <input type="text" id="institucion" placeholder="Selecciona tipo de evento primero" disabled />
+          <input type="text" id="institucion" placeholder="Selecciona tipo de evento primero" disabled
+                 autocomplete="off" maxlength="120" aria-label="Nombre de la institución" />
         </div>
       </div>
     </div>
@@ -46,75 +76,96 @@
     <div class="grupo fila-compartida">
       <div class="subgrupo">
         <label for="distrito">Distrito</label>
-        <input type="text" id="distrito" placeholder="Ej: Los Olivos" />
+        <input type="text" id="distrito" placeholder="Ej: Los Olivos" autocomplete="off" maxlength="80"
+               aria-label="Distrito" />
       </div>
       <div class="subgrupo">
         <label for="fecha">Fecha</label>
-        <input type="date" id="fecha" />
+        <input type="date" id="fecha" aria-label="Fecha del evento" />
       </div>
     </div>
 
     <hr />
 
-    <!-- Fotos y Miniaturas -->
-    <div class="grupo">
-      <label>Fotos (4 en total — 2 por página)</label>
+    <!-- Fotos -->
+    <fieldset class="grupo">
+      <legend>Fotos <small>(4 en total — 2 por página)</small></legend>
       <div class="fotos-grid">
         <div class="foto-item">
-          <label for="foto1">Foto 1 (Página 1)</label>
-          <input type="file" id="foto1" accept="image/*" />
-          <div class="wrapper-miniatura"><img id="form-preview1" class="miniatura-control" /></div>
+          <label for="foto1">Foto 1 <span class="label-hint">(Página 1)</span></label>
+          <input type="file" id="foto1" accept="image/*" aria-label="Foto 1, página 1" />
+          <div class="wrapper-miniatura">
+            <img id="form-preview1" class="miniatura-control" alt="Vista previa foto 1" />
+            <span class="placeholder-icon">📷</span>
+          </div>
         </div>
         <div class="foto-item">
-          <label for="foto2">Foto 2 (Página 1)</label>
-          <input type="file" id="foto2" accept="image/*" />
-          <div class="wrapper-miniatura"><img id="form-preview2" class="miniatura-control" /></div>
+          <label for="foto2">Foto 2 <span class="label-hint">(Página 1)</span></label>
+          <input type="file" id="foto2" accept="image/*" aria-label="Foto 2, página 1" />
+          <div class="wrapper-miniatura">
+            <img id="form-preview2" class="miniatura-control" alt="Vista previa foto 2" />
+            <span class="placeholder-icon">📷</span>
+          </div>
         </div>
         <div class="foto-item">
-          <label for="foto3">Foto 3 (Página 2)</label>
-          <input type="file" id="foto3" accept="image/*" />
-          <div class="wrapper-miniatura"><img id="form-preview3" class="miniatura-control" /></div>
+          <label for="foto3">Foto 3 <span class="label-hint">(Página 2)</span></label>
+          <input type="file" id="foto3" accept="image/*" aria-label="Foto 3, página 2" />
+          <div class="wrapper-miniatura">
+            <img id="form-preview3" class="miniatura-control" alt="Vista previa foto 3" />
+            <span class="placeholder-icon">📷</span>
+          </div>
         </div>
         <div class="foto-item">
-          <label for="foto4">Foto 4 (Página 2)</label>
-          <input type="file" id="foto4" accept="image/*" />
-          <div class="wrapper-miniatura"><img id="form-preview4" class="miniatura-control" /></div>
+          <label for="foto4">Foto 4 <span class="label-hint">(Página 2)</span></label>
+          <input type="file" id="foto4" accept="image/*" aria-label="Foto 4, página 2" />
+          <div class="wrapper-miniatura">
+            <img id="form-preview4" class="miniatura-control" alt="Vista previa foto 4" />
+            <span class="placeholder-icon">📷</span>
+          </div>
         </div>
       </div>
-    </div>
+    </fieldset>
 
-    <button class="btn-generar" id="btnGenerar">Generar PDF</button>
+    <button class="btn-generar" id="btnGenerar" disabled>
+      <span class="btn-icon">📄</span> Generar PDF
+    </button>
   </div>
 
+  <!-- Canvas offscreen para preprocesamiento de imágenes (no visible) -->
+  <canvas id="offscreen-canvas" style="display:none;"></canvas>
+
   <!-- PLANTILLA MOTOR PDF -->
-  <div id="pdf-template">
+  <div id="pdf-template" aria-hidden="true">
     <!-- Página 1 -->
-    <div class="pdf-pagina">
-      <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
+    <div class="pdf-pagina" data-page="1">
+      <img class="pdf-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Crect width='200' height='60' fill='%2300529b' rx='4'/%3E%3Ctext x='100' y='38' text-anchor='middle' fill='white' font-family='Arial,sans-serif' font-weight='bold' font-size='22'%3ESEDAPAL%3C/text%3E%3C/svg%3E"
+           alt="Logo Sedapal" width="130" height="39" />
       <div class="pdf-header-block">
         <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
         <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
         <p class="pdf-fecha" id="pdf-fecha-1"></p>
       </div>
-      <img class="pdf-foto" id="pdf-foto-1" />
-      <img class="pdf-foto" id="pdf-foto-2" />
+      <img class="pdf-foto" id="pdf-foto-1" alt="Foto 1" />
+      <img class="pdf-foto" id="pdf-foto-2" alt="Foto 2" />
     </div>
 
     <!-- Página 2 -->
-    <div class="pdf-pagina">
-      <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
+    <div class="pdf-pagina" data-page="2">
+      <img class="pdf-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60'%3E%3Crect width='200' height='60' fill='%2300529b' rx='4'/%3E%3Ctext x='100' y='38' text-anchor='middle' fill='white' font-family='Arial,sans-serif' font-weight='bold' font-size='22'%3ESEDAPAL%3C/text%3E%3C/svg%3E"
+           alt="Logo Sedapal" width="130" height="39" />
       <div class="pdf-header-block">
         <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
         <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
         <p class="pdf-fecha" id="pdf-fecha-2"></p>
       </div>
-      <img class="pdf-foto" id="pdf-foto-3" />
-      <img class="pdf-foto" id="pdf-foto-4" />
+      <img class="pdf-foto" id="pdf-foto-3" alt="Foto 3" />
+      <img class="pdf-foto" id="pdf-foto-4" alt="Foto 4" />
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="index.js"></script>
+  <footer class="app-footer">
+    <small>Generador de PDF — SEDAPAL v2.0</small>
+  </footer>
+
 </body>
 </html>
