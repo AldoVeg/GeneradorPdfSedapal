@@ -1,261 +1,256 @@
-// Validación segura del motor PDF.js
-if (typeof pdfjsLib !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-} else {
-    alert("Error de red: No se pudo cargar el motor PDF. Revisa tu conexión.");
-}
+ document.addEventListener('DOMContentLoaded', function() {
+  
+  // 1. Memoria caché para imágenes
+  var imagenes = { 1: null, 2: null, 3: null, 4: null };
 
-const workspace = document.getElementById('workspace');
-const btnGenerate = document.getElementById('btn-generate');
-const overlay = document.getElementById('loading-overlay');
-const textStatus = document.getElementById('loading-text');
-const progressBar = document.getElementById('progress-bar');
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
+  // 2. Diccionario de Subcategorías reorganizado
+  var subCategoriasPorEvento = {
+    "VISITA_IE": ["INSTITUCIÓN EDUCATIVA", "COLEGIO"],
+    "VISITA_ADULTOS": ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA"],
+    "TALLER_IE": ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "INSTITUTO", "INSTITUCIÓN EDUCATIVA", "COLEGIO", "CEBA", "INICIAL", "NIDO"],
+    "TALLER_EMPRESAS": ["SEDAPAL", "MUNICIPALIDAD", "UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "CENTRO COMERCIAL"],
+    "TALLER_COMUNIDAD": ["MERCADO", "URBANIZACIÓN", "ASOCIACIÓN", "A.H."]
+  };
 
-let pdfDocumentsData = new Map();
-let pageRegistry = [];
-const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+  // 3. Captura segura de Elementos del DOM
+  var tipoEvento = document.getElementById('tipoEvento');
+  var comboSub = document.getElementById('subCategoria');
+  var inputInstitucion = document.getElementById('institucion');
+  var inputDistrito = document.getElementById('distrito');
+  var inputFecha = document.getElementById('fecha');
+  var btnGenerar = document.getElementById('btnGenerar');
 
-// Inicialización estable de Sortable (Arrastre visual)
-new Sortable(workspace, {
-    animation: 150,
-    ghostClass: 'sortable-ghost',
-    delay: 100, // Evita conflictos entre dar clic para seleccionar y arrastrar
-    delayOnTouchOnly: true,
-    onEnd: () => syncRegistryWithDOM()
-});
+  // 4. Forzar mayúsculas en caliente (Blindaje visual)
+  if (inputInstitucion) {
+    inputInstitucion.addEventListener('input', function() {
+      this.value = this.value.toUpperCase();
+    });
+  }
+  if (inputDistrito) {
+    inputDistrito.addEventListener('input', function() {
+      this.value = this.value.toUpperCase();
+    });
+  }
 
-// Eventos seguros para la zona de carga
-dropZone.addEventListener('click', () => fileInput.click());
+  // 5. Escuchador de Tipo de Evento (El motor del combo dependiente)
+  if (tipoEvento) {
+    tipoEvento.addEventListener('change', function () {
+      var tipo = this.value;
+      
+      if (!comboSub || !inputInstitucion) return;
 
-['dragover', 'dragenter'].forEach(e => dropZone.addEventListener(e, ev => { 
-    ev.preventDefault(); 
-    dropZone.classList.add('drag-over'); 
-}));
+      // Reset reactivo
+      comboSub.innerHTML = '<option value="" disabled selected>-- Tipo --</option>';
+      inputInstitucion.value = '';
 
-['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, ev => { 
-    ev.preventDefault(); 
-    dropZone.classList.remove('drag-over'); 
-}));
+      if (tipo && subCategoriasPorEvento[tipo]) {
+        comboSub.disabled = false;
+        inputInstitucion.disabled = false;
+        inputInstitucion.placeholder = "Escribe el nombre aquí...";
 
-dropZone.addEventListener('drop', ev => processFiles(ev.dataTransfer.files));
-fileInput.addEventListener('change', ev => processFiles(ev.target.files));
+        subCategoriasPorEvento[tipo].forEach(function (opcion) {
+          var opt = document.createElement('option');
+          opt.value = opcion;
+          opt.textContent = opcion;
+          comboSub.appendChild(opt);
+        });
+      } else {
+        comboSub.disabled = true;
+        inputInstitucion.disabled = true;
+        inputInstitucion.placeholder = "Selecciona tipo de evento primero";
+      }
+    });
+  }
 
-// Listener global: Borrar múltiples páginas con la tecla Suprimir
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-        const selected = document.querySelectorAll('.page-card.selected');
-        if (selected.length > 0) {
-            selected.forEach(card => card.remove());
-            syncRegistryWithDOM();
-        }
+  // Aporte de fluidez UX: Auto-enfocar el cuadro de texto al seleccionar subcategoría
+  if (comboSub && inputInstitucion) {
+    comboSub.addEventListener('change', function() {
+      inputInstitucion.focus();
+    });
+  }
+
+  // 6. Escuchador seguro para Fotos
+  [1, 2, 3, 4].forEach(function (n) {
+    var input = document.getElementById('foto' + n);
+    var formPreview = document.getElementById('form-preview' + n);
+
+    if (input) {
+      input.addEventListener('change', function () {
+        var archivo = input.files[0];
+        if (!archivo) return;
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          imagenes[n] = e.target.result;
+          if (formPreview) {
+            formPreview.src = e.target.result;
+            formPreview.classList.add('visible');
+          }
+        };
+        reader.readAsDataURL(archivo);
+      });
     }
-});
+  });
 
-async function processFiles(files) {
-    // FILTRO FORTIFICADO: Verifica el MIME type o la extensión del archivo
-    const pdfs = Array.from(files).filter(f => 
-        f.type === 'application/pdf' || 
-        f.name.toLowerCase().endsWith('.pdf')
-    );
+  // 7. Funciones de Procesamiento Interno
+  function formatearFecha(valor) {
+    if (!valor) return '';
+    var partes = valor.split('-');
+    return partes[2] + '.' + partes[1] + '.' + partes[0];
+  }
 
-    if (pdfs.length === 0) {
-        alert("Por favor, sube únicamente archivos en formato PDF.");
+  // PRECISIÓN EXACTA AJUSTADA AQUÍ:
+  function obtenerTituloPDF(valor) {
+    // ÚNICA opción en 2 filas (con <br>)
+    if (valor === 'VISITA_IE') return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
+    
+    // Todas las demás opciones en una sola fila (sin <br>)
+    if (valor === 'VISITA_ADULTOS') return 'VISITA DE ADULTOS A LA PLANTA';
+    if (valor === 'TALLER_IE') return 'TALLER A INSTITUCIONES EDUCATIVAS';
+    if (valor === 'TALLER_EMPRESAS') return 'TALLER A EMPRESAS';
+    if (valor === 'TALLER_COMUNIDAD') return 'TALLER A LA COMUNIDAD';
+    return '';
+  }
+
+  // Guarda únicamente con el texto libre ingresado por el operario
+  function obtenerNombreShortFile(nombreIngresado) {
+    var texto = nombreIngresado.toUpperCase().trim();
+    texto = texto.replace(/[^A-Z0-9\s-_]/g, '');
+    return texto.replace(/\s+/g, '_').replace(/_+/g, '_').replace(/-+/g, '-');
+  }
+
+  // ALGORITMO ROBUSTO DE FUENTE ADAPTATIVA (Previene desbordes y wraps inesperados)
+  function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase, forzarUnaFila) {
+    var el = document.getElementById(elementoId);
+    if (!el) return;
+    
+    // Forzado estricto de una fila para evitar saltos automáticos no deseados
+    if (forzarUnaFila) {
+      el.style.whiteSpace = 'nowrap';
+    } else {
+      el.style.whiteSpace = 'normal';
+    }
+    
+    el.style.fontSize = tamañoMaximoBase + 'px';
+    var anchoContenedor = el.parentElement.clientWidth || 682; 
+    var anchoTexto = el.scrollWidth;
+    
+    if (anchoTexto > anchoContenedor) {
+      var nuevoTamaño = Math.floor((anchoContenedor / anchoTexto) * tamañoMaximoBase);
+      if (nuevoTamaño < 14) nuevoTamaño = 14; 
+      el.style.fontSize = nuevoTamaño + 'px';
+    }
+  }
+
+  // 8. Generación del PDF
+  function generarPDF() {
+    if (!tipoEvento || !comboSub || !inputInstitucion || !inputDistrito || !inputFecha) return;
+
+    var tipoVal = tipoEvento.value;
+    if (!tipoVal) {
+      alert('Por favor selecciona un tipo de evento.');
+      return;
+    }
+    if (!comboSub.value) {
+      alert('Por favor selecciona el tipo de institución o entidad.');
+      return;
+    }
+
+    var subCategoriaTexto = comboSub.value;
+    var nombreInstitucion = inputInstitucion.value.trim().toUpperCase();
+    var distrito          = inputDistrito.value.trim().toUpperCase();
+    var fecha             = formatearFecha(inputFecha.value);
+
+    if (!nombreInstitucion || !distrito || !fecha) {
+      alert('Por favor completa todos los datos del evento y ubicación.');
+      return;
+    }
+    if (!imagenes[1] || !imagenes[2] || !imagenes[3] || !imagenes[4]) {
+      alert('Por favor selecciona las 4 fotos.');
+      return;
+    }
+
+    // Bloquear botón para evitar clics dobles molestos
+    var originalBtnText = btnGenerar.textContent;
+    btnGenerar.textContent = 'Generando PDF... Espere';
+    btnGenerar.disabled = true;
+
+    var titulo = obtenerTituloPDF(tipoVal);
+    var subtituloFormateado = (subCategoriaTexto + ' ' + nombreInstitucion + ' – ' + distrito).toUpperCase();
+
+    // Rellenar plantillas
+    document.getElementById('pdf-titulo-1').innerHTML = titulo;
+    document.getElementById('pdf-institucion-1').textContent = subtituloFormateado;
+    document.getElementById('pdf-fecha-1').textContent = fecha;
+    document.getElementById('pdf-foto-1').src = imagenes[1];
+    document.getElementById('pdf-foto-2').src = imagenes[2];
+
+    document.getElementById('pdf-titulo-2').innerHTML = titulo;
+    document.getElementById('pdf-institucion-2').textContent = subtituloFormateado;
+    document.getElementById('pdf-fecha-2').textContent = fecha;
+    document.getElementById('pdf-foto-3').src = imagenes[3];
+    document.getElementById('pdf-foto-4').src = imagenes[4];
+
+    // Activar plantilla de forma invisible para que html2canvas capture todo sin destellos en el celular
+    var template = document.getElementById('pdf-template');
+    template.style.cssText = 'display:block; position:fixed; top:0; left:0; z-index:9999; opacity:0.01; pointer-events:none;';
+
+    // Aplicar ajuste adaptativo inteligente a los subtítulos (siempre 1 sola fila)
+    ajustarFuenteAdaptativa('pdf-institucion-1', 25, true);
+    ajustarFuenteAdaptativa('pdf-institucion-2', 25, true);
+
+    // Aplicar ajuste adaptativo inteligente a los títulos según la regla fundamental
+    var esDosFilas = (tipoVal === 'VISITA_IE');
+    ajustarFuenteAdaptativa('pdf-titulo-1', 38, !esDosFilas);
+    ajustarFuenteAdaptativa('pdf-titulo-2', 38, !esDosFilas);
+
+    var paginas = Array.from(document.querySelectorAll('.pdf-pagina'));
+    var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+    function capturarPagina(index) {
+      if (index >= paginas.length) {
+        
+        // Guardar estrictamente con el nombre ingresado (sin prefijos)
+        var nombreCortoLimpio = obtenerNombreShortFile(nombreInstitucion);
+        var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCortoLimpio + '.pdf';
+        
+        doc.save(nombreFinalArchivo);
+        template.style.cssText = 'display:none;'; 
+        
+        // Restaurar estado de control del botón
+        btnGenerar.textContent = originalBtnText;
+        btnGenerar.disabled = false;
         return;
+      }
+
+      html2canvas(paginas[index], {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: 794,
+        height: 1123
+      }).then(function (canvas) {
+        var imgData = canvas.toDataURL('image/jpeg', 0.95);
+        if (index > 0) doc.addPage();
+        doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+        capturarPagina(index + 1);
+      }).catch(function(error) {
+        alert("Ocurrió un error inesperado al procesar las imágenes.");
+        btnGenerar.textContent = originalBtnText;
+        btnGenerar.disabled = false;
+        template.style.cssText = 'display:none;'; 
+      });
     }
 
-    showLoader('Procesando páginas...', true);
-    btnGenerate.disabled = true;
+    // Delay de estabilidad para asegurar el flujo móvil
+    setTimeout(function() {
+      capturarPagina(0);
+    }, 120);
+  }
 
-    for (const file of pdfs) {
-        const fileId = generateId();
-        const buffer = await file.arrayBuffer();
-        pdfDocumentsData.set(fileId, buffer);
+  // 9. Asignar Evento al Botón Generar
+  if (btnGenerar) {
+    btnGenerar.addEventListener('click', generarPDF);
+  }
 
-        try {
-            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-            const totalPages = pdf.numPages;
-            
-            for (let i = 1; i <= totalPages; i++) {
-                updateProgress(i, totalPages);
-                
-                // Micro-pausa obligatoria para evitar congelamiento de RAM
-                if (i % 5 === 0) await new Promise(r => setTimeout(r, 1)); 
-
-                const pageId = `${fileId}_${i}`;
-                const page = await pdf.getPage(i);
-                
-                const viewport = page.getViewport({ scale: 0.15 }); 
-                const canvas = document.createElement('canvas');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-
-                const nodeData = {
-                    id: pageId,
-                    fileId: fileId,
-                    pageIndex: i - 1, 
-                    rotation: 0,
-                    thumb: canvas.toDataURL('image/jpeg', 0.5) 
-                };
-                
-                pageRegistry.push(nodeData);
-                createCardInDOM(nodeData);
-            }
-        } catch (error) {
-            console.error("Error al leer el archivo PDF: ", error);
-        }
-    }
-
-    btnGenerate.disabled = pageRegistry.length === 0;
-    hideLoader();
-    // Limpiamos el input para permitir subir el mismo archivo dos veces si el usuario lo desea
-    fileInput.value = "";
-}
-
-function createCardInDOM(data) {
-    const card = document.createElement('div');
-    card.className = 'page-card';
-    card.dataset.id = data.id;
-
-    // Lógica propia e irrompible de Selección Múltiple (clic simple)
-    card.addEventListener('click', (e) => {
-        // Ignora el clic si se hizo en el botón de borrar
-        if (e.target.classList.contains('btn-delete-page')) return;
-        card.classList.toggle('selected');
-    });
-
-    const btnDel = document.createElement('button');
-    btnDel.className = 'btn-delete-page';
-    btnDel.innerHTML = '✖';
-    btnDel.onclick = (e) => {
-        e.stopPropagation(); 
-        
-        // Si hay varios seleccionados y hacemos clic en la X de uno de ellos, se borran todos
-        const selected = document.querySelectorAll('.page-card.selected');
-        if (selected.length > 0 && card.classList.contains('selected')) {
-            selected.forEach(c => c.remove());
-        } else {
-            card.remove(); // Borra solo esta si no estaba seleccionada
-        }
-        syncRegistryWithDOM();
-    };
-
-    const img = document.createElement('img');
-    img.className = 'page-image';
-    img.src = data.thumb;
-    img.dataset.rotation = 0;
-
-    // Rotación con Doble Clic
-    card.ondblclick = (e) => {
-        e.stopPropagation();
-        const currentRot = (parseInt(img.dataset.rotation) + 90) % 360;
-        img.dataset.rotation = currentRot;
-        img.style.transform = `rotate(${currentRot}deg)`;
-        
-        const regIndex = pageRegistry.findIndex(p => p.id === data.id);
-        if(regIndex > -1) pageRegistry[regIndex].rotation = currentRot;
-    };
-
-    card.appendChild(btnDel);
-    card.appendChild(img);
-    workspace.appendChild(card);
-}
-
-function syncRegistryWithDOM() {
-    const newOrder = [];
-    Array.from(workspace.children).forEach(card => {
-        const record = pageRegistry.find(p => p.id === card.dataset.id);
-        if(record) newOrder.push(record);
-    });
-    
-    pageRegistry = newOrder;
-    btnGenerate.disabled = pageRegistry.length === 0;
-}
-
-btnGenerate.addEventListener('click', async () => {
-    if (pageRegistry.length === 0) return;
-    
-    showLoader('Compilando documento final...', true);
-    const applyFoleo = document.getElementById('chk-foleo').checked;
-    const optimize = document.getElementById('chk-optimize').checked;
-    let folioNum = parseInt(document.getElementById('folio-start').value) || 1;
-
-    try {
-        const finalPdf = await PDFLib.PDFDocument.create();
-        const loadedDocs = new Map();
-
-        for (const [fileId, buffer] of pdfDocumentsData.entries()) {
-            loadedDocs.set(fileId, await PDFLib.PDFDocument.load(buffer, { ignoreEncryption: true }));
-        }
-
-        const font = await finalPdf.embedFont(PDFLib.StandardFonts.HelveticaBold);
-        
-        for (let i = 0; i < pageRegistry.length; i++) {
-            updateProgress(i, pageRegistry.length);
-            
-            // Chunking en compilación 
-            if (i % 10 === 0) await new Promise(r => setTimeout(r, 1)); 
-            
-            const req = pageRegistry[i];
-            const srcDoc = loadedDocs.get(req.fileId);
-            const [copiedPage] = await finalPdf.copyPages(srcDoc, [req.pageIndex]);
-            
-            if (req.rotation !== 0) {
-                const currentRot = copiedPage.getRotation().angle;
-                copiedPage.setRotation(PDFLib.degrees(currentRot + req.rotation));
-            }
-
-            finalPdf.addPage(copiedPage);
-
-            if (applyFoleo) {
-                const fStr = folioNum.toString().padStart(3, '0');
-                const { width, height } = copiedPage.getSize();
-                
-                copiedPage.drawRectangle({
-                    x: width - 40, y: height - 25,
-                    width: 30, height: 16,
-                    color: PDFLib.rgb(1, 1, 1)
-                });
-
-                copiedPage.drawText(fStr, {
-                    x: width - 36, y: height - 21,
-                    size: 11, font: font,
-                    color: PDFLib.rgb(0, 0, 0)
-                });
-                folioNum++;
-            }
-        }
-
-        const saveOptions = optimize ? { useObjectStreams: true } : {};
-        const finalBytes = await finalPdf.save(saveOptions);
-
-        const blob = new Blob([finalBytes], { type: 'application/pdf' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `SEDAPAL_Unificado_${new Date().toISOString().split('T')[0]}.pdf`;
-        link.click();
-
-    } catch (e) {
-        alert("Error crítico durante la unificación: " + e.message);
-    } finally {
-        hideLoader();
-    }
 });
-
-function showLoader(msg, withProgress = false) {
-    textStatus.innerText = msg;
-    overlay.classList.remove('hidden');
-    progressBar.classList.toggle('hidden', !withProgress);
-    if(withProgress) progressBar.value = 0;
-}
-
-function updateProgress(current, total) {
-    progressBar.value = (current / total) * 100;
-}
-
-function hideLoader() {
-    overlay.classList.add('hidden');
-    progressBar.classList.add('hidden');
-}
