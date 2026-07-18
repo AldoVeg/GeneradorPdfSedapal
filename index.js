@@ -1,83 +1,471 @@
- document.addEventListener('DOMContentLoaded', function() {
-  
-  // 1. Memoria caché para imágenes
-  var imagenes = { 1: null, 2: null, 3: null, 4: null };
+/* ═══════════════════════════════════════════════
+   index.js — Generador de PDF SEDAPAL (Fortificado)
+   IIFE estricto · Validación CDN · Compresión de
+   imágenes · Canvas offscreen · Progreso real
+   ═══════════════════════════════════════════════ */
 
-  // 2. Diccionario de Subcategorías reorganizado
-  var subCategoriasPorEvento = {
-    "VISITA_IE": ["INSTITUCIÓN EDUCATIVA", "COLEGIO"],
-    "VISITA_ADULTOS": ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA"],
-    "TALLER_IE": ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "INSTITUTO", "INSTITUCIÓN EDUCATIVA", "COLEGIO", "CEBA", "INICIAL", "NIDO"],
-    "TALLER_EMPRESAS": ["SEDAPAL", "MUNICIPALIDAD", "UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "CENTRO COMERCIAL"],
-    "TALLER_COMUNIDAD": ["MERCADO", "URBANIZACIÓN", "ASOCIACIÓN", "A.H."]
-  };
+(function () {
+  'use strict';
 
-  // 3. Captura segura de Elementos del DOM
-  var tipoEvento = document.getElementById('tipoEvento');
-  var comboSub = document.getElementById('subCategoria');
-  var inputInstitucion = document.getElementById('institucion');
-  var inputDistrito = document.getElementById('distrito');
-  var inputFecha = document.getElementById('fecha');
-  var btnGenerar = document.getElementById('btnGenerar');
-
-  // 4. Forzar mayúsculas en caliente (Blindaje visual)
-  if (inputInstitucion) {
-    inputInstitucion.addEventListener('input', function() {
-      this.value = this.value.toUpperCase();
-    });
-  }
-  if (inputDistrito) {
-    inputDistrito.addEventListener('input', function() {
-      this.value = this.value.toUpperCase();
-    });
+  /* ── Guard: DOM aún no listo ── */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 
-  // 5. Escuchador de Tipo de Evento (El motor del combo dependiente)
-  if (tipoEvento) {
-    tipoEvento.addEventListener('change', function () {
-      var tipo = this.value;
-      
-      if (!comboSub || !inputInstitucion) return;
+  /* ═══════════════════════════════════════════════
+     INIT
+     ═══════════════════════════════════════════════ */
+  function init() {
 
-      // Reset reactivo
-      comboSub.innerHTML = '<option value="" disabled selected>-- Tipo --</option>';
-      inputInstitucion.value = '';
+    /* ── Validación de CDNs ── */
+    if (typeof html2canvas === 'undefined') {
+      showToast('Librería html2canvas no disponible. Verifica tu conexión.', 'error');
+      return;
+    }
+    if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+      showToast('Librería jsPDF no disponible. Verifica tu conexión.', 'error');
+      return;
+    }
 
-      if (tipo && subCategoriasPorEvento[tipo]) {
-        comboSub.disabled = false;
-        inputInstitucion.disabled = false;
-        inputInstitucion.placeholder = "Escribe el nombre aquí...";
+    /* ── Referencias DOM cacheadas ── */
+    var DOM = {
+      tipoEvento:      document.getElementById('tipoEvento'),
+      comboSub:        document.getElementById('subCategoria'),
+      inputInstitucion: document.getElementById('institucion'),
+      inputDistrito:   document.getElementById('distrito'),
+      inputFecha:      document.getElementById('fecha'),
+      btnGenerar:      document.getElementById('btnGenerar'),
+      overlay:         document.getElementById('loading-overlay'),
+      loadingText:     document.getElementById('loading-text'),
+      progressBar:     document.getElementById('progress-bar'),
+      template:        document.getElementById('pdf-template'),
+      offscreenCanvas: document.getElementById('offscreen-canvas'),
+      cdnError:        document.getElementById('cdn-error')
+    };
 
-        subCategoriasPorEvento[tipo].forEach(function (opcion) {
-          var opt = document.createElement('option');
-          opt.value = opcion;
-          opt.textContent = opcion;
-          comboSub.appendChild(opt);
-        });
+    /* ── Estado interno ── */
+    var imagenes = { 1: null, 2: null, 3: null, 4: null };
+    var imagenesComprimidas = { 1: null, 2: null, 3: null, 4: null };
+    var btnOriginalText = DOM.btnGenerar ? DOM.btnGenerar.innerHTML : 'Generar PDF';
+    var isGenerating = false;
+
+    /* ── Diccionario de subcategorías ── */
+    var subCategoriasPorEvento = {
+      "VISITA_IE":        ["INSTITUCIÓN EDUCATIVA", "COLEGIO"],
+      "VISITA_ADULTOS":   ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA"],
+      "TALLER_IE":        ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "INSTITUTO", "INSTITUCIÓN EDUCATIVA", "COLEGIO", "CEBA", "INICIAL", "NIDO"],
+      "TALLER_EMPRESAS":  ["SEDAPAL", "MUNICIPALIDAD", "UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "CENTRO COMERCIAL"],
+      "TALLER_COMUNIDAD": ["MERCADO", "URBANIZACIÓN", "ASOCIACIÓN", "A.H."]
+    };
+
+    /* ── Tamaño máximo de imagen (bytes) ── */
+    var MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
+
+    /* ── Dimensiones de compresión ── */
+    var COMPRESS_WIDTH  = 1600;
+    var COMPRESS_HEIGHT = 1200;
+    var COMPRESS_QUALITY = 0.85;
+
+    /* ═══════════════════════════════════════════════
+       UTILIDADES
+       ═══════════════════════════════════════════════ */
+
+    function showToast(msg, type) {
+      var container = document.getElementById('toast-container');
+      if (!container) return;
+      var toast = document.createElement('div');
+      toast.className = 'toast toast-' + (type || 'error');
+      toast.textContent = msg;
+      toast.addEventListener('click', function () {
+        toast.classList.add('toast-out');
+        setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+      });
+      container.appendChild(toast);
+      setTimeout(function () {
+        if (toast.parentNode) {
+          toast.classList.add('toast-out');
+          setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+        }
+      }, 5000);
+    }
+
+    function showLoader(msg, withProgress) {
+      if (!DOM.overlay) return;
+      DOM.loadingText.textContent = msg || 'Procesando...';
+      DOM.overlay.classList.remove('hidden');
+      if (withProgress) {
+        DOM.progressBar.classList.remove('hidden');
+        DOM.progressBar.value = 0;
       } else {
-        comboSub.disabled = true;
-        inputInstitucion.disabled = true;
-        inputInstitucion.placeholder = "Selecciona tipo de evento primero";
+        DOM.progressBar.classList.add('hidden');
       }
-    });
-  }
+    }
 
-  // Aporte de fluidez UX: Auto-enfocar el cuadro de texto al seleccionar subcategoría
-  if (comboSub && inputInstitucion) {
-    comboSub.addEventListener('change', function() {
-      inputInstitucion.focus();
-    });
-  }
+    function updateProgress(current, total) {
+      if (!DOM.progressBar || DOM.progressBar.classList.contains('hidden')) return;
+      DOM.progressBar.value = Math.round((current / total) * 100);
+    }
 
-  // 6. Escuchador seguro para Fotos
-  [1, 2, 3, 4].forEach(function (n) {
-    var input = document.getElementById('foto' + n);
-    var formPreview = document.getElementById('form-preview' + n);
+    function hideLoader() {
+      if (!DOM.overlay) return;
+      DOM.overlay.classList.add('hidden');
+      DOM.progressBar.classList.add('hidden');
+    }
 
-    if (input) {
+    function formatearFecha(valor) {
+      if (!valor) return '';
+      var partes = valor.split('-');
+      return partes[2] + '.' + partes[1] + '.' + partes[0];
+    }
+
+    function obtenerTituloPDF(valor) {
+      if (valor === 'VISITA_IE') return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
+      if (valor === 'VISITA_ADULTOS')   return 'VISITA DE ADULTOS A LA PLANTA';
+      if (valor === 'TALLER_IE')        return 'TALLER A INSTITUCIONES EDUCATIVAS';
+      if (valor === 'TALLER_EMPRESAS')  return 'TALLER A EMPRESAS';
+      if (valor === 'TALLER_COMUNIDAD') return 'TALLER A LA COMUNIDAD';
+      return '';
+    }
+
+    function obtenerNombreShortFile(nombreIngresado) {
+      var texto = (nombreIngresado || '').toUpperCase().trim();
+      texto = texto.replace(/[^A-Z0-9\s\-_]/g, '');
+      texto = texto.replace(/\s+/g, '_').replace(/_+/g, '_').replace(/-+/g, '-');
+      return texto || 'documento';
+    }
+
+    function ajustarFuenteAdaptativa(elementoId, tamanoMaximoBase, forzarUnaFila) {
+      var el = document.getElementById(elementoId);
+      if (!el) return;
+      if (forzarUnaFila) {
+        el.style.whiteSpace = 'nowrap';
+      } else {
+        el.style.whiteSpace = 'normal';
+      }
+      el.style.fontSize = tamanoMaximoBase + 'px';
+      var anchoContenedor = (el.parentElement && el.parentElement.clientWidth) || 682;
+      var anchoTexto = el.scrollWidth;
+      if (anchoTexto > anchoContenedor) {
+        var nuevoTamano = Math.floor((anchoContenedor / anchoTexto) * tamanoMaximoBase);
+        if (nuevoTamano < 14) nuevoTamano = 14;
+        el.style.fontSize = nuevoTamano + 'px';
+      }
+    }
+
+    /* ═══════════════════════════════════════════════
+       COMPRESIÓN DE IMAGEN (Canvas Offscreen)
+       ═══════════════════════════════════════════════ */
+    function comprimirImagen(dataURL, slot) {
+      return new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.onload = function () {
+          var canvas = DOM.offscreenCanvas;
+          if (!canvas) { resolve(dataURL); return; }
+          var ctx = canvas.getContext('2d');
+
+          var w = img.width;
+          var h = img.height;
+          var ratio = Math.min(COMPRESS_WIDTH / w, COMPRESS_HEIGHT / h, 1);
+
+          canvas.width  = Math.round(w * ratio);
+          canvas.height = Math.round(h * ratio);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          var compressed = canvas.toDataURL('image/jpeg', COMPRESS_QUALITY);
+          imagenesComprimidas[slot] = compressed;
+
+          // Liberar canvas
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          resolve(compressed);
+        };
+        img.onerror = function () {
+          // Si falla la compresión, usar la original
+          imagenesComprimidas[slot] = dataURL;
+          resolve(dataURL);
+        };
+        img.src = dataURL;
+      });
+    }
+
+    /* ═══════════════════════════════════════════════
+       VALIDACIÓN DE CAMPOS
+       ═══════════════════════════════════════════════ */
+    function validarCampos() {
+      var errores = [];
+
+      if (!DOM.tipoEvento || !DOM.tipoEvento.value) {
+        errores.push('Selecciona un tipo de evento.');
+        if (DOM.tipoEvento) DOM.tipoEvento.classList.add('input-error');
+      } else {
+        if (DOM.tipoEvento) DOM.tipoEvento.classList.remove('input-error');
+      }
+
+      if (!DOM.comboSub || !DOM.comboSub.value) {
+        errores.push('Selecciona el tipo de institución.');
+        if (DOM.comboSub) DOM.comboSub.classList.add('input-error');
+      } else {
+        if (DOM.comboSub) DOM.comboSub.classList.remove('input-error');
+      }
+
+      if (!DOM.inputInstitucion || !DOM.inputInstitucion.value.trim()) {
+        errores.push('Ingresa el nombre de la institución.');
+        if (DOM.inputInstitucion) DOM.inputInstitucion.classList.add('input-error');
+      } else {
+        if (DOM.inputInstitucion) DOM.inputInstitucion.classList.remove('input-error');
+      }
+
+      if (!DOM.inputDistrito || !DOM.inputDistrito.value.trim()) {
+        errores.push('Ingresa el distrito.');
+        if (DOM.inputDistrito) DOM.inputDistrito.classList.add('input-error');
+      } else {
+        if (DOM.inputDistrito) DOM.inputDistrito.classList.remove('input-error');
+      }
+
+      if (!DOM.inputFecha || !DOM.inputFecha.value) {
+        errores.push('Selecciona la fecha.');
+        if (DOM.inputFecha) DOM.inputFecha.classList.add('input-error');
+      } else {
+        if (DOM.inputFecha) DOM.inputFecha.classList.remove('input-error');
+      }
+
+      for (var i = 1; i <= 4; i++) {
+        if (!imagenes[i]) {
+          errores.push('Selecciona la Foto ' + i + '.');
+          break; // Solo reportamos una vez
+        }
+      }
+
+      return errores;
+    }
+
+    /* ═══════════════════════════════════════════════
+       GENERACIÓN DEL PDF
+       ═══════════════════════════════════════════════ */
+    function generarPDF() {
+      if (isGenerating) return;
+
+      var errores = validarCampos();
+      if (errores.length > 0) {
+        showToast(errores[0], 'error');
+        return;
+      }
+
+      isGenerating = true;
+
+      var tipoVal          = DOM.tipoEvento.value;
+      var subCategoriaTexto = DOM.comboSub.value;
+      var nombreInstitucion = DOM.inputInstitucion.value.trim().toUpperCase();
+      var distrito          = DOM.inputDistrito.value.trim().toUpperCase();
+      var fecha             = formatearFecha(DOM.inputFecha.value);
+
+      // Bloquear botón
+      DOM.btnGenerar.innerHTML = '<span class="btn-icon">⏳</span> Generando PDF...';
+      DOM.btnGenerar.disabled = true;
+
+      showLoader('Comprimiendo imágenes...', true);
+
+      // Comprimir las 4 imágenes antes de generar
+      var promesas = [];
+      for (var i = 1; i <= 4; i++) {
+        promesas.push(comprimirImagen(imagenes[i], i));
+      }
+
+      Promise.all(promesas).then(function () {
+        updateProgress(1, 3);
+        DOM.loadingText.textContent = 'Preparando plantilla...';
+
+        var titulo = obtenerTituloPDF(tipoVal);
+        var subtituloFormateado = (subCategoriaTexto + ' ' + nombreInstitucion + ' – ' + distrito).toUpperCase();
+
+        // Rellenar plantilla con imágenes comprimidas
+        document.getElementById('pdf-titulo-1').innerHTML = titulo;
+        document.getElementById('pdf-institucion-1').textContent = subtituloFormateado;
+        document.getElementById('pdf-fecha-1').textContent = fecha;
+        document.getElementById('pdf-foto-1').src = imagenesComprimidas[1];
+        document.getElementById('pdf-foto-2').src = imagenesComprimidas[2];
+
+        document.getElementById('pdf-titulo-2').innerHTML = titulo;
+        document.getElementById('pdf-institucion-2').textContent = subtituloFormateado;
+        document.getElementById('pdf-fecha-2').textContent = fecha;
+        document.getElementById('pdf-foto-3').src = imagenesComprimidas[3];
+        document.getElementById('pdf-foto-4').src = imagenesComprimidas[4];
+
+        // Mostrar plantilla de forma invisible para captura
+        DOM.template.style.cssText = 'display:block; position:fixed; top:0; left:0; z-index:9999; opacity:0.01; pointer-events:none;';
+
+        // Ajuste adaptativo de fuentes
+        ajustarFuenteAdaptativa('pdf-institucion-1', 25, true);
+        ajustarFuenteAdaptativa('pdf-institucion-2', 25, true);
+        var esDosFilas = (tipoVal === 'VISITA_IE');
+        ajustarFuenteAdaptativa('pdf-titulo-1', 38, !esDosFilas);
+        ajustarFuenteAdaptativa('pdf-titulo-2', 38, !esDosFilas);
+
+        updateProgress(2, 3);
+        DOM.loadingText.textContent = 'Renderizando páginas...';
+
+        // Pequeño delay para que el DOM se estabilice con las imágenes
+        setTimeout(function () {
+          var paginas = Array.from(document.querySelectorAll('.pdf-pagina'));
+          var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+          function capturarPagina(index) {
+            if (index >= paginas.length) {
+              // Finalizar
+              var nombreCortoLimpio = obtenerNombreShortFile(nombreInstitucion);
+              var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCortoLimpio + '.pdf';
+
+              updateProgress(3, 3);
+              DOM.loadingText.textContent = 'Guardando...';
+
+              try {
+                doc.save(nombreFinalArchivo);
+                showToast('PDF generado exitosamente: ' + nombreFinalArchivo, 'success');
+              } catch (e) {
+                showToast('Error al guardar el PDF: ' + e.message, 'error');
+              }
+
+              // Limpiar
+              DOM.template.style.cssText = 'display:none;';
+              DOM.btnGenerar.innerHTML = btnOriginalText;
+              DOM.btnGenerar.disabled = false;
+              isGenerating = false;
+              hideLoader();
+              return;
+            }
+
+            var paginaActual = index + 1;
+            DOM.loadingText.textContent = 'Renderizando página ' + paginaActual + ' de 2...';
+
+            html2canvas(paginas[index], {
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              logging: false,
+              width: 794,
+              height: 1123
+            }).then(function (canvas) {
+              var imgData = canvas.toDataURL('image/jpeg', 0.92);
+              if (index > 0) doc.addPage();
+              doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+
+              // Liberar canvas
+              canvas.width = 0;
+              canvas.height = 0;
+
+              capturarPagina(index + 1);
+            }).catch(function (error) {
+              console.error('Error en html2canvas:', error);
+              showToast('Error al renderizar la página ' + paginaActual + '. Intenta de nuevo.', 'error');
+              DOM.template.style.cssText = 'display:none;';
+              DOM.btnGenerar.innerHTML = btnOriginalText;
+              DOM.btnGenerar.disabled = false;
+              isGenerating = false;
+              hideLoader();
+            });
+          }
+
+          capturarPagina(0);
+        }, 200);
+      }).catch(function (error) {
+        console.error('Error en compresión:', error);
+        showToast('Error al procesar las imágenes.', 'error');
+        DOM.btnGenerar.innerHTML = btnOriginalText;
+        DOM.btnGenerar.disabled = false;
+        isGenerating = false;
+        hideLoader();
+      });
+    }
+
+    /* ═══════════════════════════════════════════════
+       EVENT LISTENERS
+       ═══════════════════════════════════════════════ */
+
+    /* ── Forzar mayúsculas ── */
+    if (DOM.inputInstitucion) {
+      DOM.inputInstitucion.addEventListener('input', function () {
+        this.value = this.value.toUpperCase();
+        this.classList.remove('input-error');
+      });
+    }
+    if (DOM.inputDistrito) {
+      DOM.inputDistrito.addEventListener('input', function () {
+        this.value = this.value.toUpperCase();
+        this.classList.remove('input-error');
+      });
+    }
+
+    /* ── Tipo de evento → subcategorías ── */
+    if (DOM.tipoEvento) {
+      DOM.tipoEvento.addEventListener('change', function () {
+        var tipo = this.value;
+        this.classList.remove('input-error');
+
+        if (!DOM.comboSub || !DOM.inputInstitucion) return;
+
+        DOM.comboSub.innerHTML = '<option value="" disabled selected>-- Tipo --</option>';
+        DOM.inputInstitucion.value = '';
+
+        if (tipo && subCategoriasPorEvento[tipo]) {
+          DOM.comboSub.disabled = false;
+          DOM.inputInstitucion.disabled = false;
+          DOM.inputInstitucion.placeholder = 'Escribe el nombre aquí...';
+
+          subCategoriasPorEvento[tipo].forEach(function (opcion) {
+            var opt = document.createElement('option');
+            opt.value = opcion;
+            opt.textContent = opcion;
+            DOM.comboSub.appendChild(opt);
+          });
+        } else {
+          DOM.comboSub.disabled = true;
+          DOM.inputInstitucion.disabled = true;
+          DOM.inputInstitucion.placeholder = 'Selecciona tipo de evento primero';
+        }
+      });
+    }
+
+    /* ── Auto-enfocar al seleccionar subcategoría ── */
+    if (DOM.comboSub && DOM.inputInstitucion) {
+      DOM.comboSub.addEventListener('change', function () {
+        this.classList.remove('input-error');
+        DOM.inputInstitucion.focus();
+      });
+    }
+
+    /* ── Limpiar error al cambiar fecha ── */
+    if (DOM.inputFecha) {
+      DOM.inputFecha.addEventListener('change', function () {
+        this.classList.remove('input-error');
+      });
+    }
+
+    /* ── Fotos: preview + validación de tamaño + compresión ── */
+    [1, 2, 3, 4].forEach(function (n) {
+      var input = document.getElementById('foto' + n);
+      var formPreview = document.getElementById('form-preview' + n);
+
+      if (!input) return;
+
       input.addEventListener('change', function () {
         var archivo = input.files[0];
         if (!archivo) return;
+
+        // Validar tipo
+        if (!archivo.type.match(/^image\//)) {
+          showToast('La Foto ' + n + ' debe ser una imagen (JPG, PNG, etc.).', 'error');
+          input.value = '';
+          return;
+        }
+
+        // Validar tamaño
+        if (archivo.size > MAX_FILE_SIZE) {
+          showToast('La Foto ' + n + ' excede los 15 MB. Usa una imagen más pequeña.', 'warning');
+          input.value = '';
+          return;
+        }
 
         var reader = new FileReader();
         reader.onload = function (e) {
@@ -87,170 +475,60 @@
             formPreview.classList.add('visible');
           }
         };
+        reader.onerror = function () {
+          showToast('Error al leer la Foto ' + n + '. Intenta de nuevo.', 'error');
+        };
         reader.readAsDataURL(archivo);
       });
-    }
-  });
+    });
 
-  // 7. Funciones de Procesamiento Interno
-  function formatearFecha(valor) {
-    if (!valor) return '';
-    var partes = valor.split('-');
-    return partes[2] + '.' + partes[1] + '.' + partes[0];
-  }
-
-  // PRECISIÓN EXACTA AJUSTADA AQUÍ:
-  function obtenerTituloPDF(valor) {
-    // ÚNICA opción en 2 filas (con <br>)
-    if (valor === 'VISITA_IE') return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
-    
-    // Todas las demás opciones en una sola fila (sin <br>)
-    if (valor === 'VISITA_ADULTOS') return 'VISITA DE ADULTOS A LA PLANTA';
-    if (valor === 'TALLER_IE') return 'TALLER A INSTITUCIONES EDUCATIVAS';
-    if (valor === 'TALLER_EMPRESAS') return 'TALLER A EMPRESAS';
-    if (valor === 'TALLER_COMUNIDAD') return 'TALLER A LA COMUNIDAD';
-    return '';
-  }
-
-  // Guarda únicamente con el texto libre ingresado por el operario
-  function obtenerNombreShortFile(nombreIngresado) {
-    var texto = nombreIngresado.toUpperCase().trim();
-    texto = texto.replace(/[^A-Z0-9\s-_]/g, '');
-    return texto.replace(/\s+/g, '_').replace(/_+/g, '_').replace(/-+/g, '-');
-  }
-
-  // ALGORITMO ROBUSTO DE FUENTE ADAPTATIVA (Previene desbordes y wraps inesperados)
-  function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase, forzarUnaFila) {
-    var el = document.getElementById(elementoId);
-    if (!el) return;
-    
-    // Forzado estricto de una fila para evitar saltos automáticos no deseados
-    if (forzarUnaFila) {
-      el.style.whiteSpace = 'nowrap';
-    } else {
-      el.style.whiteSpace = 'normal';
-    }
-    
-    el.style.fontSize = tamañoMaximoBase + 'px';
-    var anchoContenedor = el.parentElement.clientWidth || 682; 
-    var anchoTexto = el.scrollWidth;
-    
-    if (anchoTexto > anchoContenedor) {
-      var nuevoTamaño = Math.floor((anchoContenedor / anchoTexto) * tamañoMaximoBase);
-      if (nuevoTamaño < 14) nuevoTamaño = 14; 
-      el.style.fontSize = nuevoTamaño + 'px';
-    }
-  }
-
-  // 8. Generación del PDF
-  function generarPDF() {
-    if (!tipoEvento || !comboSub || !inputInstitucion || !inputDistrito || !inputFecha) return;
-
-    var tipoVal = tipoEvento.value;
-    if (!tipoVal) {
-      alert('Por favor selecciona un tipo de evento.');
-      return;
-    }
-    if (!comboSub.value) {
-      alert('Por favor selecciona el tipo de institución o entidad.');
-      return;
+    /* ── Botón Generar ── */
+    if (DOM.btnGenerar) {
+      DOM.btnGenerar.addEventListener('click', generarPDF);
     }
 
-    var subCategoriaTexto = comboSub.value;
-    var nombreInstitucion = inputInstitucion.value.trim().toUpperCase();
-    var distrito          = inputDistrito.value.trim().toUpperCase();
-    var fecha             = formatearFecha(inputFecha.value);
-
-    if (!nombreInstitucion || !distrito || !fecha) {
-      alert('Por favor completa todos los datos del evento y ubicación.');
-      return;
-    }
-    if (!imagenes[1] || !imagenes[2] || !imagenes[3] || !imagenes[4]) {
-      alert('Por favor selecciona las 4 fotos.');
-      return;
+    /* ── Habilitar botón cuando haya datos ── */
+    function checkEnableButton() {
+      if (!DOM.btnGenerar || isGenerating) return;
+      var hasEvento  = DOM.tipoEvento && DOM.tipoEvento.value;
+      var hasSub     = DOM.comboSub && DOM.comboSub.value;
+      var hasInst    = DOM.inputInstitucion && DOM.inputInstitucion.value.trim();
+      var hasDist    = DOM.inputDistrito && DOM.inputDistrito.value.trim();
+      var hasFecha   = DOM.inputFecha && DOM.inputFecha.value;
+      var hasFotos   = imagenes[1] && imagenes[2] && imagenes[3] && imagenes[4];
+      DOM.btnGenerar.disabled = !(hasEvento && hasSub && hasInst && hasDist && hasFecha && hasFotos);
     }
 
-    // Bloquear botón para evitar clics dobles molestos
-    var originalBtnText = btnGenerar.textContent;
-    btnGenerar.textContent = 'Generando PDF... Espere';
-    btnGenerar.disabled = true;
-
-    var titulo = obtenerTituloPDF(tipoVal);
-    var subtituloFormateado = (subCategoriaTexto + ' ' + nombreInstitucion + ' – ' + distrito).toUpperCase();
-
-    // Rellenar plantillas
-    document.getElementById('pdf-titulo-1').innerHTML = titulo;
-    document.getElementById('pdf-institucion-1').textContent = subtituloFormateado;
-    document.getElementById('pdf-fecha-1').textContent = fecha;
-    document.getElementById('pdf-foto-1').src = imagenes[1];
-    document.getElementById('pdf-foto-2').src = imagenes[2];
-
-    document.getElementById('pdf-titulo-2').innerHTML = titulo;
-    document.getElementById('pdf-institucion-2').textContent = subtituloFormateado;
-    document.getElementById('pdf-fecha-2').textContent = fecha;
-    document.getElementById('pdf-foto-3').src = imagenes[3];
-    document.getElementById('pdf-foto-4').src = imagenes[4];
-
-    // Activar plantilla de forma invisible para que html2canvas capture todo sin destellos en el celular
-    var template = document.getElementById('pdf-template');
-    template.style.cssText = 'display:block; position:fixed; top:0; left:0; z-index:9999; opacity:0.01; pointer-events:none;';
-
-    // Aplicar ajuste adaptativo inteligente a los subtítulos (siempre 1 sola fila)
-    ajustarFuenteAdaptativa('pdf-institucion-1', 25, true);
-    ajustarFuenteAdaptativa('pdf-institucion-2', 25, true);
-
-    // Aplicar ajuste adaptativo inteligente a los títulos según la regla fundamental
-    var esDosFilas = (tipoVal === 'VISITA_IE');
-    ajustarFuenteAdaptativa('pdf-titulo-1', 38, !esDosFilas);
-    ajustarFuenteAdaptativa('pdf-titulo-2', 38, !esDosFilas);
-
-    var paginas = Array.from(document.querySelectorAll('.pdf-pagina'));
-    var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-
-    function capturarPagina(index) {
-      if (index >= paginas.length) {
-        
-        // Guardar estrictamente con el nombre ingresado (sin prefijos)
-        var nombreCortoLimpio = obtenerNombreShortFile(nombreInstitucion);
-        var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCortoLimpio + '.pdf';
-        
-        doc.save(nombreFinalArchivo);
-        template.style.cssText = 'display:none;'; 
-        
-        // Restaurar estado de control del botón
-        btnGenerar.textContent = originalBtnText;
-        btnGenerar.disabled = false;
-        return;
+    // Monitorear cambios para habilitar botón
+    var camposParaChequear = [DOM.tipoEvento, DOM.comboSub, DOM.inputInstitucion, DOM.inputDistrito, DOM.inputFecha];
+    camposParaChequear.forEach(function (campo) {
+      if (!campo) return;
+      campo.addEventListener('change', checkEnableButton);
+      if (campo.tagName === 'INPUT' && campo.type === 'text') {
+        campo.addEventListener('input', checkEnableButton);
       }
+    });
 
-      html2canvas(paginas[index], {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        width: 794,
-        height: 1123
-      }).then(function (canvas) {
-        var imgData = canvas.toDataURL('image/jpeg', 0.95);
-        if (index > 0) doc.addPage();
-        doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-        capturarPagina(index + 1);
-      }).catch(function(error) {
-        alert("Ocurrió un error inesperado al procesar las imágenes.");
-        btnGenerar.textContent = originalBtnText;
-        btnGenerar.disabled = false;
-        template.style.cssText = 'display:none;'; 
+    // Para las fotos, chequeamos después de cada carga
+    var observer = new MutationObserver(checkEnableButton);
+    [1, 2, 3, 4].forEach(function (n) {
+      var preview = document.getElementById('form-preview' + n);
+      if (preview) {
+        observer.observe(preview, { attributes: true, attributeFilter: ['class', 'src'] });
+      }
+    });
+
+    // Chequeo inicial
+    checkEnableButton();
+
+    /* ── Limpiar input-error al interactuar ── */
+    document.querySelectorAll('input, select').forEach(function (el) {
+      el.addEventListener('focus', function () {
+        this.classList.remove('input-error');
       });
-    }
+    });
 
-    // Delay de estabilidad para asegurar el flujo móvil
-    setTimeout(function() {
-      capturarPagina(0);
-    }, 120);
+    console.log('✅ Generador de PDF SEDAPAL — inicializado correctamente.');
   }
 
-  // 9. Asignar Evento al Botón Generar
-  if (btnGenerar) {
-    btnGenerar.addEventListener('click', generarPDF);
-  }
-
-});
+})();
