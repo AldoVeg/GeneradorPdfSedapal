@@ -1,164 +1,146 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Generador de informes PDF para SEDAPAL — visitas y talleres" />
-  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-  <title>Generador de PDF — SEDAPAL</title>
-  <link rel="stylesheet" href="index.css" />
-
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-          onerror="document.getElementById('cdn-error').classList.remove('hidden')"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-          onerror="document.getElementById('cdn-error').classList.remove('hidden')"></script>
-  <script defer src="index.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditor Estructural de Proyectos | RR.HH. & Derecho Laboral</title>
+    <link rel="stylesheet" href="index.css">
+    
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- jsPDF + AutoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- Mammoth.js para DOCX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <!-- JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
-  <div id="cdn-error" class="cdn-error-banner hidden" role="alert">
-    <span>⚠️ Error de red: no se pudieron cargar las librerías externas. Verifica tu conexión e intenta de nuevo.</span>
-  </div>
+    <!-- Banner de error de dependencias CDN -->
+    <div id="cdn-alert" class="cdn-alert hidden" role="alert" aria-live="assertive">
+        <span>⚠️</span>
+        <span id="cdn-alert-text"></span>
+        <button class="cdn-alert-close" onclick="this.parentElement.classList.add('hidden')">&times;</button>
+    </div>
 
-  <div id="loading-overlay" class="overlay hidden" role="status" aria-live="polite">
-    <div class="loader-spinner"></div>
-    <p id="loading-text">Generando PDF...</p>
-    <progress id="progress-bar" value="0" max="100" class="hidden"></progress>
-  </div>
-
-  <div id="toast-container" class="toast-container" aria-live="assertive"></div>
-
-  <div class="container">
-    <header>
-      <h1>Generador de Informe PDF</h1>
-      <p class="subtitulo">Completa los datos y selecciona las fotos para generar el documento.</p>
+    <header class="app-header">
+        <div class="header-container">
+            <h1>Auditor Estructural de Proyectos</h1>
+            <p>Programa de Gestión Humana & Derecho Laboral | Rúbrica Vigesimal (0-20)</p>
+        </div>
     </header>
 
-    <hr />
+    <main class="main-container">
+        <!-- Dropzone de carga masiva -->
+        <section class="upload-section">
+            <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Zona de carga de archivos. Arrastra o haz clic para seleccionar.">
+                <div class="drop-zone-content">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <h3>Arrastra aquí archivos, carpetas o paquetes ZIP</h3>
+                    <p>Formatos aceptados: PDF, DOCX, ZIP | También puedes cargar carpetas completas</p>
+                    <input type="file" id="file-input" multiple accept=".pdf,.docx,.zip" class="file-input" aria-label="Seleccionar archivos">
+                </div>
+            </div>
 
-    <fieldset class="grupo">
-      <legend class="sr-only">Tipo de evento</legend>
-      <label for="tipoEvento">Tipo de Evento</label>
-      <select id="tipoEvento" required>
-        <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
-        <option value="VISITA_IE">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
-        <option value="VISITA_ADULTOS">VISITA DE ADULTOS A LA PLANTA</option>
-        <option value="TALLER_IE">TALLER A INSTITUCIONES EDUCATIVAS</option>
-        <option value="TALLER_EMPRESAS">TALLER A EMPRESAS</option>
-        <option value="TALLER_COMUNIDAD">TALLER A LA COMUNIDAD</option>
-      </select>
-    </fieldset>
+            <!-- Botón de carga de carpeta -->
+            <div class="folder-upload-row">
+                <button id="btn-folder" class="btn btn-outline">📁 Cargar carpeta completa</button>
+                <input type="file" id="folder-input" webkitdirectory multiple class="hidden-input" aria-label="Seleccionar carpeta">
+                <span id="folder-fallback-msg" class="fallback-msg hidden">💡 En este navegador, comprime la carpeta en .zip y arrástrala aquí</span>
+            </div>
 
-    <div class="grupo">
-      <label for="institucion">Institución o Entidad</label>
-      <div class="fila-compartida-dinamica">
-        <div class="col-subcategoria">
-          <select id="subCategoria" disabled aria-label="Tipo de institución">
-            <option value="" disabled selected>-- Tipo --</option>
-          </select>
+            <!-- Lista de archivos detectados -->
+            <div id="file-list" class="file-list hidden">
+                <div class="file-list-header">
+                    <span>📋 Archivos detectados: <strong id="file-count">0</strong></span>
+                    <span class="file-stats">
+                        <span id="stat-pdf" class="stat-badge stat-pdf hidden">📄 PDF: 0</span>
+                        <span id="stat-docx" class="stat-badge stat-docx hidden">📝 DOCX: 0</span>
+                        <span id="stat-zip" class="stat-badge stat-zip hidden">📦 ZIP: 0</span>
+                    </span>
+                </div>
+                <ul id="file-list-items" class="file-list-items"></ul>
+            </div>
+        </section>
+
+        <!-- Barra de Estado y Acciones -->
+        <section class="controls-section">
+            <div class="status-box">
+                <span id="status-text">Esperando archivos...</span>
+                <progress id="progress-bar" value="0" max="100" class="hidden"></progress>
+            </div>
+            <div class="action-buttons">
+                <button id="btn-clear" class="btn btn-ghost btn-sm" disabled>🗑️ Limpiar todo</button>
+                <button id="btn-export-pdf" class="btn btn-secondary" disabled>📄 Exportar Reporte PDF</button>
+                <button id="btn-export-csv" class="btn btn-primary" disabled>📊 Exportar Excel (CSV)</button>
+            </div>
+        </section>
+
+        <!-- Panel de Errores -->
+        <div id="error-panel" class="error-panel hidden" role="alert" aria-live="polite">
+            <div class="error-panel-header">
+                <strong>⚠️ Errores durante el procesamiento</strong>
+                <button id="btn-dismiss-errors" class="btn-ghost btn-sm">&times;</button>
+            </div>
+            <ul id="error-list" class="error-list"></ul>
         </div>
-        <div class="col-nombre">
-          <input type="text" id="institucion" placeholder="Selecciona tipo de evento primero" disabled
-                 autocomplete="off" maxlength="120" aria-label="Nombre de la institución" />
+
+        <!-- Filtro de búsqueda -->
+        <div class="filter-row">
+            <input type="text" id="filter-input" class="filter-input" placeholder="🔍 Filtrar por nombre de estudiante..." aria-label="Filtrar resultados por nombre">
+            <span id="results-count" class="results-count hidden"></span>
         </div>
-      </div>
+
+        <!-- Tabla de Resultados Consolidada -->
+        <section class="results-section">
+            <h2>Consolidado de Evaluaciones</h2>
+            <div class="table-responsive">
+                <table id="results-table" class="results-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th class="sortable" data-sort="estudiante" aria-sort="none">Estudiante</th>
+                            <th class="sortable" data-sort="c1" aria-sort="none">C1: Normativa Perú (5P)</th>
+                            <th class="sortable" data-sort="c2" aria-sort="none">C2: Casos Reales (7P)</th>
+                            <th class="sortable" data-sort="c3" aria-sort="none">C3: Ética/RRHH (8P)</th>
+                            <th class="sortable" data-sort="notaFinal" aria-sort="none">Nota (0-20)</th>
+                            <th class="sortable" data-sort="palabras" aria-sort="none">Extensión</th>
+                            <th class="sortable" data-sort="biblioOk" aria-sort="none">Bibliografía</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr>
+                            <td colspan="9" class="empty-msg">No hay datos procesados. Sube los archivos en PDF, DOCX o ZIP para iniciar.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Overlay de carga -->
+    <div id="loading-overlay" class="loading-overlay hidden" role="dialog" aria-modal="true" aria-label="Procesando archivos">
+        <div class="loading-card">
+            <div class="spinner"></div>
+            <h3 id="loading-title">Procesando archivos...</h3>
+            <p id="loading-detail">Preparando documentos</p>
+            <progress id="overlay-progress" value="0" max="100"></progress>
+            <span id="overlay-percent">0%</span>
+            <button id="btn-cancel" class="btn btn-ghost btn-sm">Cancelar</button>
+        </div>
     </div>
 
-    <div class="grupo fila-compartida">
-      <div class="subgrupo">
-        <label for="distrito">Distrito</label>
-        <input type="text" id="distrito" placeholder="Ej: Los Olivos" autocomplete="off" maxlength="80"
-               aria-label="Distrito" />
-      </div>
-      <div class="subgrupo">
-        <label for="fecha">Fecha</label>
-        <input type="date" id="fecha" aria-label="Fecha del evento" />
-      </div>
-    </div>
+    <footer class="app-footer">
+        <p>&copy; 2026 Auditor Estructural — Sistematización TIC | Gestión Ambiental y Recursos Humanos</p>
+    </footer>
 
-    <hr />
-
-    <fieldset class="grupo">
-      <legend>Fotos <small>(4 en total — 2 por página)</small></legend>
-      <div class="fotos-grid">
-        <div class="foto-item">
-          <label for="foto1">Foto 1 <span class="label-hint">(Página 1)</span></label>
-          <input type="file" id="foto1" accept="image/*" aria-label="Foto 1, página 1" />
-          <div class="wrapper-miniatura">
-            <img id="form-preview1" class="miniatura-control" alt="Vista previa foto 1" />
-            <span class="placeholder-icon">📷</span>
-          </div>
-        </div>
-        <div class="foto-item">
-          <label for="foto2">Foto 2 <span class="label-hint">(Página 1)</span></label>
-          <input type="file" id="foto2" accept="image/*" aria-label="Foto 2, página 1" />
-          <div class="wrapper-miniatura">
-            <img id="form-preview2" class="miniatura-control" alt="Vista previa foto 2" />
-            <span class="placeholder-icon">📷</span>
-          </div>
-        </div>
-        <div class="foto-item">
-          <label for="foto3">Foto 3 <span class="label-hint">(Página 2)</span></label>
-          <input type="file" id="foto3" accept="image/*" aria-label="Foto 3, página 2" />
-          <div class="wrapper-miniatura">
-            <img id="form-preview3" class="miniatura-control" alt="Vista previa foto 3" />
-            <span class="placeholder-icon">📷</span>
-          </div>
-        </div>
-        <div class="foto-item">
-          <label for="foto4">Foto 4 <span class="label-hint">(Página 2)</span></label>
-          <input type="file" id="foto4" accept="image/*" aria-label="Foto 4, página 2" />
-          <div class="wrapper-miniatura">
-            <img id="form-preview4" class="miniatura-control" alt="Vista previa foto 4" />
-            <span class="placeholder-icon">📷</span>
-          </div>
-        </div>
-      </div>
-    </fieldset>
-
-    <button class="btn-generar" id="btnGenerar" disabled>
-      <span class="btn-icon">📄</span> Generar PDF
-    </button>
-  </div>
-
-  <canvas id="offscreen-canvas" style="display:none;"></canvas>
-
-  <!-- PLANTILLA MOTOR PDF (Rutas de Logotipo Corregidas a logo/) -->
-  <div id="pdf-template" aria-hidden="true">
-    <div class="pdf-pagina" data-page="1">
-      <img class="pdf-logo" 
-           src="logo/logosedapal-removebg-preview.png" 
-           alt="Logo Sedapal v2" 
-           onerror="console.error('Error Crítico: No se encontró el logo institucional en logo/.'); alert('⚠️ Alerta del Sistema: El logotipo corporativo en la ruta [logo/logosedapal-removebg-preview.png] no se pudo cargar. El PDF podría emitirse sin cabecera oficial.');" />
-      
-      <div class="pdf-header-block">
-        <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
-        <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
-        <p class="pdf-fecha" id="pdf-fecha-1"></p>
-      </div>
-      <img class="pdf-foto" id="pdf-foto-1" alt="Foto 1" />
-      <img class="pdf-foto" id="pdf-foto-2" alt="Foto 2" />
-    </div>
-
-    <div class="pdf-pagina" data-page="2">
-      <img class="pdf-logo" 
-           src="logo/logosedapal-removebg-preview.png" 
-           alt="Logo Sedapal v2" 
-           onerror="console.error('Error Crítico: No se encontró el logo institucional en logo/.');" />
-      
-      <div class="pdf-header-block">
-        <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
-        <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
-        <p class="pdf-fecha" id="pdf-fecha-2"></p>
-      </div>
-      <img class="pdf-foto" id="pdf-foto-3" alt="Foto 3" />
-      <img class="pdf-foto" id="pdf-foto-4" alt="Foto 4" />
-    </div>
-  </div>
-
-  <footer class="app-footer">
-    <small>Generador de PDF — SEDAPAL v2.0</small>
-  </footer>
-
+    <script defer src="index.js"></script>
 </body>
 </html>
