@@ -1,120 +1,120 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Generador de PDF - Sedapal</title>
-  <link rel="stylesheet" href="index.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluador Académico Automático - Gestión Humana</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-  <div class="container">
-    <h1>Generador de Informe PDF</h1>
-    <p class="subtitulo">Completa los datos y selecciona las fotos para generar el documento.</p>
+    <header class="app-header">
+        <div class="header-container">
+            <h1>📋 Sistema de Evaluación Automática de Ensayos</h1>
+            <p>Auditoría determinista basada en norma laboral peruana, evidencias y ética de RR.HH.</p>
+        </div>
+    </header>
 
-    <hr />
+    <main class="app-container">
+        
+        <div id="cdn-alert" class="alert-box alert-warning hidden">
+            <span>⚠️</span> <span id="cdn-alert-text">Cargando componentes del sistema...</span>
+        </div>
 
-    <!-- Tipo de evento -->
-    <div class="grupo">
-      <label for="tipoEvento">Tipo de Evento</label>
-      <select id="tipoEvento">
-        <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
-        <option value="VISITA_IE">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
-        <option value="VISITA_ADULTOS">VISITA DE ADULTOS A LA PLANTA</option>
-        <option value="TALLER_IE">TALLER A INSTITUCIONES EDUCATIVAS</option>
-        <option value="TALLER_EMPRESAS">TALLER A EMPRESAS</option>
-        <option value="TALLER_COMUNIDAD">TALLER A LA COMUNIDAD</option>
-      </select>
+        <section class="upload-card">
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-zone-content">
+                    <div class="upload-icon">📁</div>
+                    <h3>Arrastra y suelta aquí la carpeta o archivos de los estudiantes</h3>
+                    <p>Soporta carpetas completas, archivos individuales <strong>.PDF</strong>, <strong>.DOCX</strong> o comprimidos <strong>.ZIP</strong></p>
+                    
+                    <div class="button-group">
+                        <label class="btn btn-primary">
+                            📄 Seleccionar Archivos
+                            <input type="file" id="file-input" multiple accept=".pdf,.docx,.zip" class="hidden">
+                        </label>
+                        <button id="btn-folder" class="btn btn-secondary">
+                            📂 Cargar Carpeta Completa
+                        </button>
+                        <input type="file" id="folder-input" webkitdirectory directory multiple class="hidden">
+                    </div>
+                </div>
+            </div>
+
+            <div id="file-list" class="file-list-container hidden">
+                <div class="file-list-header">
+                    <h4>Archivos listos para evaluar (<span id="file-count">0</span>)</h4>
+                    <button id="btn-clear" class="btn btn-small btn-danger">Limpiar todo</button>
+                </div>
+                <ul id="file-list-items" class="file-chips-grid"></ul>
+            </div>
+        </section>
+
+        <div id="error-panel" class="alert-box alert-error hidden">
+            <div class="error-header">
+                <strong>Observaciones en lectura de archivos:</strong>
+                <button id="btn-dismiss-errors" class="btn-text">&times;</button>
+            </div>
+            <ul id="error-list"></ul>
+        </div>
+
+        <section class="results-card">
+            <div class="results-header">
+                <div>
+                    <h2>📊 Consolidado General de Evaluaciones</h2>
+                    <span id="results-count" class="badge-info hidden">Mostrando 0 resultados</span>
+                </div>
+                
+                <div class="action-tools">
+                    <input type="text" id="filter-input" placeholder="🔍 Buscar estudiante..." class="search-input">
+                    <button id="btn-export-csv" class="btn btn-success" disabled>📥 Exportar Excel (CSV)</button>
+                    <button id="btn-export-pdf" class="btn btn-dark" disabled>📄 Exportar PDF</button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">#</th>
+                            <th class="sortable" data-sort="estudiante">Estudiante</th>
+                            <th class="sortable" data-sort="c1" style="text-align: center;">C1: Normativa (5P)</th>
+                            <th class="sortable" data-sort="c2" style="text-align: center;">C2: Evidencias (7P)</th>
+                            <th class="sortable" data-sort="c3" style="text-align: center;">C3: Ética/RRHH (8P)</th>
+                            <th class="sortable" data-sort="notaFinal" style="text-align: center;">Nota Final</th>
+                            <th style="text-align: center;">Extensión</th>
+                            <th style="text-align: center;">Fuentes</th>
+                            <th style="width: 35%;">Diagnóstico Sintético</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr>
+                            <td colspan="9" class="empty-msg">Sube o arrastra archivos para iniciar la evaluación automática.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="loading-overlay" class="overlay hidden">
+        <div class="loader-card">
+            <div class="spinner"></div>
+            <h3 id="loading-title">Evaluando documentos...</h3>
+            <p id="loading-detail">Extrayendo texto y verificando patrones legales...</p>
+            <progress id="overlay-progress" value="0" max="100"></progress>
+            <span id="overlay-percent">0%</span>
+            <br>
+            <button id="btn-cancel" class="btn btn-small btn-secondary" style="margin-top:15px;">Cancelar</button>
+        </div>
     </div>
 
-    <!-- Fila Compartida: Subcategoría + Nombre -->
-    <div class="grupo">
-      <label for="institucion">Institución o Entidad</label>
-      <div class="fila-compartida-dinamica">
-        <div class="col-subcategoria">
-          <select id="subCategoria" disabled>
-            <option value="" disabled selected>-- Tipo --</option>
-          </select>
-        </div>
-        <div class="col-nombre">
-          <input type="text" id="institucion" placeholder="Selecciona tipo de evento primero" disabled />
-        </div>
-      </div>
-    </div>
-
-    <!-- Distrito y Fecha -->
-    <div class="grupo fila-compartida">
-      <div class="subgrupo">
-        <label for="distrito">Distrito</label>
-        <input type="text" id="distrito" placeholder="Ej: Los Olivos" />
-      </div>
-      <div class="subgrupo">
-        <label for="fecha">Fecha</label>
-        <input type="date" id="fecha" />
-      </div>
-    </div>
-
-    <hr />
-
-    <!-- Fotos y Miniaturas -->
-    <div class="grupo">
-      <label>Fotos (4 en total — 2 por página)</label>
-      <div class="fotos-grid">
-        <div class="foto-item">
-          <label for="foto1">Foto 1 (Página 1)</label>
-          <input type="file" id="foto1" accept="image/*" />
-          <div class="wrapper-miniatura"><img id="form-preview1" class="miniatura-control" /></div>
-        </div>
-        <div class="foto-item">
-          <label for="foto2">Foto 2 (Página 1)</label>
-          <input type="file" id="foto2" accept="image/*" />
-          <div class="wrapper-miniatura"><img id="form-preview2" class="miniatura-control" /></div>
-        </div>
-        <div class="foto-item">
-          <label for="foto3">Foto 3 (Página 2)</label>
-          <input type="file" id="foto3" accept="image/*" />
-          <div class="wrapper-miniatura"><img id="form-preview3" class="miniatura-control" /></div>
-        </div>
-        <div class="foto-item">
-          <label for="foto4">Foto 4 (Página 2)</label>
-          <input type="file" id="foto4" accept="image/*" />
-          <div class="wrapper-miniatura"><img id="form-preview4" class="miniatura-control" /></div>
-        </div>
-      </div>
-    </div>
-
-    <button class="btn-generar" id="btnGenerar">Generar PDF</button>
-  </div>
-
-  <!-- PLANTILLA MOTOR PDF -->
-  <div id="pdf-template">
-    <!-- Página 1 -->
-    <div class="pdf-pagina">
-      <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
-      <div class="pdf-header-block">
-        <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
-        <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
-        <p class="pdf-fecha" id="pdf-fecha-1"></p>
-      </div>
-      <img class="pdf-foto" id="pdf-foto-1" />
-      <img class="pdf-foto" id="pdf-foto-2" />
-    </div>
-
-    <!-- Página 2 -->
-    <div class="pdf-pagina">
-      <img class="pdf-logo" src="logo/logosedapal-removebg-preview.png" alt="Logo Sedapal" />
-      <div class="pdf-header-block">
-        <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
-        <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
-        <p class="pdf-fecha" id="pdf-fecha-2"></p>
-      </div>
-      <img class="pdf-foto" id="pdf-foto-3" />
-      <img class="pdf-foto" id="pdf-foto-4" />
-    </div>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="index.js"></script>
+    <script src="index.js"></script>
 </body>
 </html>
