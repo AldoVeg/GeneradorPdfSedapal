@@ -40,9 +40,9 @@
   <!-- Interfaz Principal -->
   <main class="container">
     <header class="app-header">
-      <div class="badge-status"><span class="pulse"></span> Motor de Generación v2.6</div>
+      <div class="badge-status"><span class="pulse"></span> Motor de Generación v2.7</div>
       <h1>Generador de Informes PDF</h1>
-      <p class="subtitulo">Ingresa los datos del evento y adjunta las 4 evidencias fotográficas.</p>
+      <p class="subtitulo">Ingresa los datos del evento y adjunta o **arrastra** las 4 evidencias fotográficas.</p>
     </header>
 
     <hr class="divider" />
@@ -94,42 +94,54 @@
       <hr class="divider" />
 
       <fieldset class="grupo">
-        <legend class="section-title">Evidencias Fotográficas <small>(4 requeridas — 2 por página)</small></legend>
+        <legend class="section-title">Evidencias Fotográficas <small>(4 requeridas — Haz clic o arrastra)</small></legend>
         <div class="fotos-grid">
           
           <div class="foto-item">
             <label for="foto1">Foto 1 <span class="label-hint">(Pág 1 - Sup)</span></label>
             <input type="file" id="foto1" accept="image/*" aria-label="Foto 1" />
-            <div class="wrapper-miniatura">
+            <div class="wrapper-miniatura" id="drop-zone-1" data-slot="1">
               <img id="form-preview1" class="miniatura-control" alt="Vista previa foto 1" />
-              <span class="placeholder-icon">📷</span>
+              <div class="placeholder-content">
+                <span class="placeholder-icon">📁</span>
+                <span class="placeholder-text">Arrastra aquí o haz clic arriba</span>
+              </div>
             </div>
           </div>
 
           <div class="foto-item">
             <label for="foto2">Foto 2 <span class="label-hint">(Pág 1 - Inf)</span></label>
             <input type="file" id="foto2" accept="image/*" aria-label="Foto 2" />
-            <div class="wrapper-miniatura">
+            <div class="wrapper-miniatura" id="drop-zone-2" data-slot="2">
               <img id="form-preview2" class="miniatura-control" alt="Vista previa foto 2" />
-              <span class="placeholder-icon">📷</span>
+              <div class="placeholder-content">
+                <span class="placeholder-icon">📁</span>
+                <span class="placeholder-text">Arrastra aquí o haz clic arriba</span>
+              </div>
             </div>
           </div>
 
           <div class="foto-item">
             <label for="foto3">Foto 3 <span class="label-hint">(Pág 2 - Sup)</span></label>
             <input type="file" id="foto3" accept="image/*" aria-label="Foto 3" />
-            <div class="wrapper-miniatura">
+            <div class="wrapper-miniatura" id="drop-zone-3" data-slot="3">
               <img id="form-preview3" class="miniatura-control" alt="Vista previa foto 3" />
-              <span class="placeholder-icon">📷</span>
+              <div class="placeholder-content">
+                <span class="placeholder-icon">📁</span>
+                <span class="placeholder-text">Arrastra aquí o haz clic arriba</span>
+              </div>
             </div>
           </div>
 
           <div class="foto-item">
             <label for="foto4">Foto 4 <span class="label-hint">(Pág 2 - Inf)</span></label>
             <input type="file" id="foto4" accept="image/*" aria-label="Foto 4" />
-            <div class="wrapper-miniatura">
+            <div class="wrapper-miniatura" id="drop-zone-4" data-slot="4">
               <img id="form-preview4" class="miniatura-control" alt="Vista previa foto 4" />
-              <span class="placeholder-icon">📷</span>
+              <div class="placeholder-content">
+                <span class="placeholder-icon">📁</span>
+                <span class="placeholder-text">Arrastra aquí o haz clic arriba</span>
+              </div>
             </div>
           </div>
 
@@ -182,7 +194,7 @@
   </div>
 
   <footer class="app-footer">
-    <small>Sistema Institucional de Reportes — SEDAPAL v2.6</small>
+    <small>Sistema Institucional de Reportes — SEDAPAL v2.7</small>
   </footer>
 
 </body>
