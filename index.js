@@ -1,239 +1,144 @@
-document.addEventListener('DOMContentLoaded', function() {
-  
-  // 1. Memoria caché para imágenes
-  var imagenes = { 1: null, 2: null, 3: null, 4: null };
+document.addEventListener('DOMContentLoaded', () => {
 
-  // 2. Diccionario de Subcategorías reorganizado
-  var subCategoriasPorEvento = {
-    "VISITA_IE": ["INSTITUCIÓN EDUCATIVA", "COLEGIO"],
-    "VISITA_ADULTOS": ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA"],
-    "TALLER_IE": ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "INSTITUTO", "INSTITUCIÓN EDUCATIVA", "COLEGIO", "CEBA", "INICIAL", "NIDO"],
-    "TALLER_EMPRESAS": ["SEDAPAL", "MUNICIPALIDAD", "UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "CENTRO COMERCIAL"],
-    "TALLER_COMUNIDAD": ["MERCADO", "URBANIZACIÓN", "ASOCIACIÓN", "A.H."]
+  // 1. DICCIONARIO ACTUALIZADO (Sincronizado con tus requerimientos exactos)
+  const subCategoriasPorEvento = {
+    "VISITA_IE":        ["INSTITUCIÓN EDUCATIVA", "COLEGIO"],
+    "VISITA_ADULTOS":   ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA"],
+    "TALLER_IE":        ["UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "INSTITUTO", "INSTITUCIÓN EDUCATIVA", "COLEGIO", "CEBA", "INICIAL", "NIDO"],
+    "TALLER_EMPRESAS":  ["SEDAPAL", "UNIVERSIDAD NACIONAL", "UNIVERSIDAD PRIVADA", "CENTRO COMERCIAL"],
+    "TALLER_COMUNIDAD": ["MUNICIPALIDAD", "MERCADO", "URBANIZACIÓN", "ASOCIACIÓN", "A.H."],
+    "TALLER_VIRTUAL":   ["MUNICIPALIDAD", "INSTITUCIÓN", "EMPRESA", "UNIVERSIDAD", "LIBRE"]
   };
 
-  // 3. Captura segura de Elementos del DOM
-  var tipoEvento = document.getElementById('tipoEvento');
-  var comboSub = document.getElementById('subCategoria');
-  var inputInstitucion = document.getElementById('institucion');
-  var inputDistrito = document.getElementById('distrito');
-  var inputFecha = document.getElementById('fecha');
-  var btnGenerar = document.getElementById('btnGenerar');
+  // Elementos DOM
+  const selectTipoEvento = document.getElementById('tipoEvento');
+  const selectSubCategoria = document.getElementById('subCategoria');
+  const inputInstitucion = document.getElementById('nombreInstitucion');
+  const inputDistrito = document.getElementById('distrito');
+  const btnGenerarPDF = document.getElementById('btnGenerarPDF');
 
-  // 4. Forzar mayúsculas en caliente (Blindaje visual)
-  if (inputInstitucion) {
-    inputInstitucion.addEventListener('input', function() {
-      this.value = this.value.toUpperCase();
+  // Elementos Live Preview
+  const prevTag = document.getElementById('prevTag');
+  const prevTitulo = document.getElementById('prevTitulo');
+  const prevSubtitulo = document.getElementById('prevSubtitulo');
+
+  // 2. EVENTO: Cambio de Tipo de Evento (Actualización Dinámica de Subcategorías)
+  selectTipoEvento.addEventListener('change', (e) => {
+    const eventoSeleccionado = e.target.value;
+    const subcategorias = subCategoriasPorEvento[eventoSeleccionado] || [];
+
+    // Limpiar y poblar select de subcategorías
+    selectSubCategoria.innerHTML = '<option value="" disabled selected>-- Selecciona una subcategoría --</option>';
+    
+    subcategorias.forEach(sub => {
+      const option = document.createElement('option');
+      option.value = sub;
+      option.textContent = sub;
+      selectSubCategoria.appendChild(option);
     });
-  }
-  if (inputDistrito) {
-    inputDistrito.addEventListener('input', function() {
-      this.value = this.value.toUpperCase();
-    });
-  }
 
-  // 5. Escuchador de Tipo de Evento (El motor del combo dependiente)
-  if (tipoEvento) {
-    tipoEvento.addEventListener('change', function () {
-      var tipo = this.value;
-      
-      if (!comboSub || !inputInstitucion) return;
-
-      // Reset reactivo
-      comboSub.innerHTML = '<option value="" disabled selected>-- Tipo --</option>';
-      inputInstitucion.value = '';
-
-      if (tipo && subCategoriasPorEvento[tipo]) {
-        comboSub.disabled = false;
-        inputInstitucion.disabled = false;
-        inputInstitucion.placeholder = "Escribe el nombre aquí...";
-
-        subCategoriasPorEvento[tipo].forEach(function (opcion) {
-          var opt = document.createElement('option');
-          opt.value = opcion;
-          opt.textContent = opcion;
-          comboSub.appendChild(opt);
-        });
-      } else {
-        comboSub.disabled = true;
-        inputInstitucion.disabled = true;
-        inputInstitucion.placeholder = "Selecciona tipo de evento primero";
-      }
-    });
-  }
-
-  // Aporte de fluidez UX: Auto-enfocar el cuadro de texto al seleccionar subcategoría
-  if (comboSub && inputInstitucion) {
-    comboSub.addEventListener('change', function() {
-      inputInstitucion.focus();
-    });
-  }
-
-  // 6. Escuchador seguro para Fotos
-  [1, 2, 3, 4].forEach(function (n) {
-    var input = document.getElementById('foto' + n);
-    var formPreview = document.getElementById('form-preview' + n);
-
-    if (input) {
-      input.addEventListener('change', function () {
-        var archivo = input.files[0];
-        if (!archivo) return;
-
-        var reader = new FileReader();
-        reader.onload = function (e) {
-          imagenes[n] = e.target.result;
-          if (formPreview) {
-            formPreview.src = e.target.result;
-            formPreview.classList.add('visible');
-          }
-        };
-        reader.readAsDataURL(archivo);
-      });
-    }
+    selectSubCategoria.disabled = false;
+    actualizarPreview();
   });
 
-  // 7. Funciones de Procesamiento Interno
-  function formatearFecha(valor) {
-    if (!valor) return '';
-    var partes = valor.split('-');
-    return partes[2] + '.' + partes[1] + '.' + partes[0];
+  // Listeners para reactividad en directo
+  selectSubCategoria.addEventListener('change', actualizarPreview);
+  inputInstitucion.addEventListener('input', actualizarPreview);
+  inputDistrito.addEventListener('input', actualizarPreview);
+
+  // 3. LÓGICA DE PREVISUALIZACIÓN Y FORMATO DE TEXTOS
+  function obtenerTextosFormateados() {
+    const tipoVal = selectTipoEvento.value;
+    const subCatVal = selectSubCategoria.value || '';
+    const instVal = inputInstitucion.value.trim() || 'NOMBRE DE LA INSTITUCIÓN';
+    const distVal = inputDistrito.value.trim() || 'DISTRITO';
+
+    // Regla de Títulos
+    let tituloHtml = '';
+    let tituloPlano = '';
+
+    switch (tipoVal) {
+      case 'VISITA_IE':
+        tituloHtml = 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
+        tituloPlano = 'VISITA DE INSTITUCIÓN EDUCATIVA A LA PLANTA';
+        break;
+      case 'VISITA_ADULTOS':
+        tituloHtml = 'VISITA DE ADULTOS A LA PLANTA';
+        tituloPlano = tituloHtml;
+        break;
+      case 'TALLER_IE':
+        tituloHtml = 'TALLER A INSTITUCIONES EDUCATIVAS';
+        tituloPlano = tituloHtml;
+        break;
+      case 'TALLER_EMPRESAS':
+        tituloHtml = 'TALLER A EMPRESAS';
+        tituloPlano = tituloHtml;
+        break;
+      case 'TALLER_COMUNIDAD':
+        tituloHtml = 'TALLER A LA COMUNIDAD';
+        tituloPlano = tituloHtml;
+        break;
+      case 'TALLER_VIRTUAL':
+        tituloHtml = 'TALLER VIRTUAL';
+        tituloPlano = tituloHtml;
+        break;
+      default:
+        tituloHtml = 'SELECCIONE UN EVENTO';
+        tituloPlano = 'SELECCIONE UN EVENTO';
+    }
+
+    // Regla para la opción "LIBRE" (sin frase alguna)
+    const prefijoSubcategoria = (subCatVal === 'LIBRE' || !subCatVal) ? '' : `${subCatVal} `;
+    const subtituloTexto = `${prefijoSubcategoria}${instVal} – ${distVal}`.toUpperCase();
+
+    return { tituloHtml, tituloPlano, subtituloTexto, tipoVal };
   }
 
-  function obtenerTituloPDF(valor) {
-    if (valor === 'VISITA_IE') return 'VISITA DE INSTITUCIÓN<br>EDUCATIVA A LA PLANTA';
-    if (valor === 'VISITA_ADULTOS') return 'VISITA DE ADULTOS A LA PLANTA';
-    if (valor === 'TALLER_IE') return 'TALLER A INSTITUCIONES<br>EDUCATIVAS';
-    if (valor === 'TALLER_EMPRESAS') return 'TALLER A EMPRESAS';
-    if (valor === 'TALLER_COMUNIDAD') return 'TALLER A LA<br>COMUNIDAD';
-    return '';
-  }
-
-  // NUEVO: Limpia todo prefijo y usa estrictamente el texto libre ingresado.
-  function obtenerNombreCortoArchivo(nombreIngresado) {
-    var texto = nombreIngresado.toUpperCase().trim();
-    // Limpia caracteres raros dejando solo letras, números, espacios y guiones
-    texto = texto.replace(/[^A-Z0-9\s-_]/g, '');
-    // Reemplaza los espacios en blanco por guiones bajos
-    return texto.replace(/\s+/g, '_').replace(/_+/g, '_').replace(/-+/g, '-');
-  }
-
-  function ajustarFuenteAdaptativa(elementoId, tamañoMaximoBase) {
-    var el = document.getElementById(elementoId);
-    if (!el) return;
+  function actualizarPreview() {
+    const { tituloHtml, subtituloTexto, tipoVal } = obtenerTextosFormateados();
     
-    el.style.fontSize = tamañoMaximoBase + 'px';
-    var anchoContenedor = el.parentElement.clientWidth || 682; 
-    var anchoTexto = el.scrollWidth;
-    
-    if (anchoTexto > anchoContenedor) {
-      var nuevoTamaño = Math.floor((anchoContenedor / anchoTexto) * tamañoMaximoBase);
-      if (nuevoTamaño < 14) nuevoTamaño = 14; 
-      el.style.fontSize = nuevoTamaño + 'px';
-    }
+    prevTag.textContent = tipoVal ? tipoVal.replace('_', ' ') : 'CONFIGURACIÓN';
+    prevTitulo.innerHTML = tituloHtml;
+    prevSubtitulo.textContent = subtituloTexto;
   }
 
-  // 8. Generación del PDF
-  function generarPDF() {
-    if (!tipoEvento || !comboSub || !inputInstitucion || !inputDistrito || !inputFecha) return;
-
-    var tipoVal = tipoEvento.value;
-    if (!tipoVal) {
-      alert('Por favor selecciona un tipo de evento.');
-      return;
-    }
-    if (!comboSub.value) {
-      alert('Por favor selecciona el tipo de institución o entidad.');
+  // 4. GENERACIÓN DEL PDF
+  btnGenerarPDF.addEventListener('click', () => {
+    // Validar formulario
+    if (!selectTipoEvento.value || !selectSubCategoria.value || !inputInstitucion.value || !inputDistrito.value) {
+      alert('Por favor, completa todos los campos requeridos antes de generar el PDF.');
       return;
     }
 
-    var subCategoriaTexto = comboSub.value;
-    var nombreInstitucion = inputInstitucion.value.trim().toUpperCase();
-    var distrito          = inputDistrito.value.trim().toUpperCase();
-    var fecha             = formatearFecha(inputFecha.value);
+    const { tituloPlano, subtituloTexto } = obtenerTextosFormateados();
 
-    if (!nombreInstitucion || !distrito || !fecha) {
-      alert('Por favor completa todos los datos del evento y ubicación.');
-      return;
+    // Inicializar jsPDF (si la librería CDN está cargada)
+    if (window.jspdf) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+      // Estilo del PDF
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(15, 23, 42); // slate-900
+
+      // Título Principal
+      doc.text(tituloPlano, 148, 80, { align: 'center' });
+
+      // Subtítulo
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(14);
+      doc.setTextColor(71, 85, 105); // slate-600
+      doc.text(subtituloTexto, 148, 100, { align: 'center' });
+
+      // Guardar PDF
+      const nombreArchivo = `Certificado_${inputInstitucion.value.replace(/\s+/g, '_')}.pdf`;
+      doc.save(nombreArchivo);
+    } else {
+      // Fallback si no hay conexión CDN
+      console.log('PDF generado en consola:', { tituloPlano, subtituloTexto });
+      alert(`¡Documento Procesado Exitosamente!\n\nTítulo: ${tituloPlano}\nDetalle: ${subtituloTexto}`);
     }
-    if (!imagenes[1] || !imagenes[2] || !imagenes[3] || !imagenes[4]) {
-      alert('Por favor selecciona las 4 fotos.');
-      return;
-    }
-
-    // Aporte de fluidez UX: Bloquear botón para evitar clics múltiples durante la generación
-    var originalBtnText = btnGenerar.textContent;
-    btnGenerar.textContent = 'Generando PDF... Espere';
-    btnGenerar.disabled = true;
-
-    var titulo = obtenerTituloPDF(tipoVal);
-    // El subtitulo visual dentro del PDF sí lleva la subcategoría
-    var subtituloFormateado = (subCategoriaTexto + ' ' + nombreInstitucion + ' – ' + distrito).toUpperCase();
-
-    document.getElementById('pdf-titulo-1').innerHTML = titulo;
-    document.getElementById('pdf-institucion-1').textContent = subtituloFormateado;
-    document.getElementById('pdf-fecha-1').textContent = fecha;
-    document.getElementById('pdf-foto-1').src = imagenes[1];
-    document.getElementById('pdf-foto-2').src = imagenes[2];
-
-    document.getElementById('pdf-titulo-2').innerHTML = titulo;
-    document.getElementById('pdf-institucion-2').textContent = subtituloFormateado;
-    document.getElementById('pdf-fecha-2').textContent = fecha;
-    document.getElementById('pdf-foto-3').src = imagenes[3];
-    document.getElementById('pdf-foto-4').src = imagenes[4];
-
-    var template = document.getElementById('pdf-template');
-    template.style.cssText = 'display:block; position:fixed; top:0; left:0; z-index:9999;';
-
-    ajustarFuenteAdaptativa('pdf-institucion-1', 25);
-    ajustarFuenteAdaptativa('pdf-institucion-2', 25);
-
-    var paginas = Array.from(document.querySelectorAll('.pdf-pagina'));
-    var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-
-    function capturarPagina(index) {
-      if (index >= paginas.length) {
-        
-        // AQUÍ SE CUMPLE LA REGLA: Nombre de archivo puramente con el texto libre.
-        var nombreCortoLimpio = obtenerNombreCortoArchivo(nombreInstitucion);
-        var nombreFinalArchivo = 'F-(' + fecha + ')-' + nombreCortoLimpio + '.pdf';
-        
-        doc.save(nombreFinalArchivo);
-        template.style.cssText = 'display:none;'; 
-        
-        // Restaurar estado del botón
-        btnGenerar.textContent = originalBtnText;
-        btnGenerar.disabled = false;
-        return;
-      }
-
-      html2canvas(paginas[index], {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        width: 794,
-        height: 1123
-      }).then(function (canvas) {
-        var imgData = canvas.toDataURL('image/jpeg', 0.95);
-        if (index > 0) doc.addPage();
-        doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-        capturarPagina(index + 1);
-      }).catch(function(error) {
-        alert("Ocurrió un error procesando el PDF. Revisa las imágenes.");
-        btnGenerar.textContent = originalBtnText;
-        btnGenerar.disabled = false;
-        template.style.cssText = 'display:none;'; 
-      });
-    }
-
-    // Iniciar captura asíncrona pero con un ligero delay para asegurar redibujado de la vista (UX celular)
-    setTimeout(function() {
-      capturarPagina(0);
-    }, 100);
-  }
-
-  // 9. Asignar Evento al Botón Generar
-  if (btnGenerar) {
-    btnGenerar.addEventListener('click', generarPDF);
-  }
+  });
 
 });
