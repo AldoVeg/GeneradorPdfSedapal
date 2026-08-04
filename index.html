@@ -1,120 +1,120 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evaluador Académico Automático - Gestión Humana</title>
-    <link rel="stylesheet" href="styles.css">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Eventos & Constancias | Tech Hub</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <!-- CSS Personalizado -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- jsPDF Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
+  <div class="tech-background">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+  </div>
+
+  <main class="app-container">
+    <!-- Header del Sistema -->
     <header class="app-header">
-        <div class="header-container">
-            <h1>📋 Sistema de Evaluación Automática de Ensayos</h1>
-            <p>Auditoría determinista basada en norma laboral peruana, evidencias y ética de RR.HH.</p>
-        </div>
+      <div class="badge-tech"><span class="pulse-dot"></span> Módulo de Certificación V2.5</div>
+      <h1>Gestor de Eventos & Talleres</h1>
+      <p>Configura, valida y genera certificados con precisión institucional.</p>
     </header>
 
-    <main class="app-container">
+    <div class="grid-layout">
+      <!-- Formulario interactivo -->
+      <section class="card form-card glass-panel">
+        <div class="card-header">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <h2>Parámetros del Evento</h2>
+        </div>
+
+        <form id="eventoForm" onsubmit="event.preventDefault();">
+          
+          <!-- Tipo de Evento -->
+          <div class="input-group">
+            <label for="tipoEvento">Tipo de Evento</label>
+            <div class="select-wrapper">
+              <select id="tipoEvento" required>
+                <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
+                <option value="VISITA_IE">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
+                <option value="VISITA_ADULTOS">VISITA DE ADULTOS A LA PLANTA</option>
+                <option value="TALLER_IE">TALLER A INSTITUCIONES EDUCATIVAS</option>
+                <option value="TALLER_EMPRESAS">TALLER A EMPRESAS</option>
+                <option value="TALLER_COMUNIDAD">TALLER A LA COMUNIDAD</option>
+                <option value="TALLER_VIRTUAL">TALLER VIRTUAL</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Subcategoría (Dinamica) -->
+          <div class="input-group">
+            <label for="subCategoria">Subcategoría / Entidad</label>
+            <div class="select-wrapper">
+              <select id="subCategoria" required disabled>
+                <option value="" disabled selected>-- Selecciona un tipo de evento primero --</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Nombre de Institución -->
+          <div class="input-group">
+            <label for="nombreInstitucion">Nombre de la Institución / Empresa</label>
+            <input type="text" id="nombreInstitucion" placeholder="Ej: San Juan Bautista" autocomplete="off" required>
+          </div>
+
+          <!-- Distrito -->
+          <div class="input-group">
+            <label for="distrito">Distrito / Localidad</label>
+            <input type="text" id="distrito" placeholder="Ej: Miraflores" autocomplete="off" required>
+          </div>
+
+          <!-- Acciones -->
+          <button type="button" id="btnGenerarPDF" class="btn-tech">
+            <span>Generar Documento PDF</span>
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <polyline points="9 15 12 18 15 15"></polyline>
+            </svg>
+          </button>
+        </form>
+      </section>
+
+      <!-- Visualización en vivo -->
+      <section class="card preview-card glass-panel">
+        <div class="card-header">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <h2>Previsualización en Tiempo Real</h2>
+        </div>
         
-        <div id="cdn-alert" class="alert-box alert-warning hidden">
-            <span>⚠️</span> <span id="cdn-alert-text">Cargando componentes del sistema...</span>
+        <div class="preview-document-box">
+          <div class="doc-watermark">PREVIEW</div>
+          <div class="doc-content">
+            <span class="doc-tag" id="prevTag">TIPO DE EVENTO</span>
+            <h3 id="prevTitulo">SELECCIONE UN EVENTO</h3>
+            <div class="doc-divider"></div>
+            <p id="prevSubtitulo" class="doc-sub">INFORMACIÓN DE LA INSTITUCIÓN Y DISTRITO</p>
+          </div>
         </div>
-
-        <section class="upload-card">
-            <div id="drop-zone" class="drop-zone">
-                <div class="drop-zone-content">
-                    <div class="upload-icon">📁</div>
-                    <h3>Arrastra y suelta aquí la carpeta o archivos de los estudiantes</h3>
-                    <p>Soporta carpetas completas, archivos individuales <strong>.PDF</strong>, <strong>.DOCX</strong> o comprimidos <strong>.ZIP</strong></p>
-                    
-                    <div class="button-group">
-                        <label class="btn btn-primary">
-                            📄 Seleccionar Archivos
-                            <input type="file" id="file-input" multiple accept=".pdf,.docx,.zip" class="hidden">
-                        </label>
-                        <button id="btn-folder" class="btn btn-secondary">
-                            📂 Cargar Carpeta Completa
-                        </button>
-                        <input type="file" id="folder-input" webkitdirectory directory multiple class="hidden">
-                    </div>
-                </div>
-            </div>
-
-            <div id="file-list" class="file-list-container hidden">
-                <div class="file-list-header">
-                    <h4>Archivos listos para evaluar (<span id="file-count">0</span>)</h4>
-                    <button id="btn-clear" class="btn btn-small btn-danger">Limpiar todo</button>
-                </div>
-                <ul id="file-list-items" class="file-chips-grid"></ul>
-            </div>
-        </section>
-
-        <div id="error-panel" class="alert-box alert-error hidden">
-            <div class="error-header">
-                <strong>Observaciones en lectura de archivos:</strong>
-                <button id="btn-dismiss-errors" class="btn-text">&times;</button>
-            </div>
-            <ul id="error-list"></ul>
-        </div>
-
-        <section class="results-card">
-            <div class="results-header">
-                <div>
-                    <h2>📊 Consolidado General de Evaluaciones</h2>
-                    <span id="results-count" class="badge-info hidden">Mostrando 0 resultados</span>
-                </div>
-                
-                <div class="action-tools">
-                    <input type="text" id="filter-input" placeholder="🔍 Buscar estudiante..." class="search-input">
-                    <button id="btn-export-csv" class="btn btn-success" disabled>📥 Exportar Excel (CSV)</button>
-                    <button id="btn-export-pdf" class="btn btn-dark" disabled>📄 Exportar PDF</button>
-                </div>
-            </div>
-
-            <div class="table-wrapper">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 40px;">#</th>
-                            <th class="sortable" data-sort="estudiante">Estudiante</th>
-                            <th class="sortable" data-sort="c1" style="text-align: center;">C1: Normativa (5P)</th>
-                            <th class="sortable" data-sort="c2" style="text-align: center;">C2: Evidencias (7P)</th>
-                            <th class="sortable" data-sort="c3" style="text-align: center;">C3: Ética/RRHH (8P)</th>
-                            <th class="sortable" data-sort="notaFinal" style="text-align: center;">Nota Final</th>
-                            <th style="text-align: center;">Extensión</th>
-                            <th style="text-align: center;">Fuentes</th>
-                            <th style="width: 35%;">Diagnóstico Sintético</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body">
-                        <tr>
-                            <td colspan="9" class="empty-msg">Sube o arrastra archivos para iniciar la evaluación automática.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-    </main>
-
-    <div id="loading-overlay" class="overlay hidden">
-        <div class="loader-card">
-            <div class="spinner"></div>
-            <h3 id="loading-title">Evaluando documentos...</h3>
-            <p id="loading-detail">Extrayendo texto y verificando patrones legales...</p>
-            <progress id="overlay-progress" value="0" max="100"></progress>
-            <span id="overlay-percent">0%</span>
-            <br>
-            <button id="btn-cancel" class="btn btn-small btn-secondary" style="margin-top:15px;">Cancelar</button>
-        </div>
+      </section>
     </div>
+  </main>
 
-    <script src="index.js"></script>
+  <script src="index.js"></script>
 </body>
 </html>
