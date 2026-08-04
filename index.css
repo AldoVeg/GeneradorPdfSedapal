@@ -1,201 +1,365 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Generador de informes PDF para SEDAPAL — visitas y talleres" />
-  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-  <title>Generador de PDF — SEDAPAL</title>
-  
-  <!-- Tipografía Profesional -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
-  <link rel="stylesheet" href="index.css" />
+:root {
+  --primary: #00529b;
+  --primary-hover: #003d73;
+  --bg-app: #f0f4f8;
+  --surface: #ffffff;
+  --text-dark: #1e293b;
+  --text-muted: #64748b;
+  --border-color: #cbd5e1;
+  --focus-ring: rgba(0, 82, 155, 0.2);
+  --radius: 8px;
+}
 
-  <!-- Librerías de Renderizado -->
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-          onerror="document.getElementById('cdn-error').classList.remove('hidden')"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-          onerror="document.getElementById('cdn-error').classList.remove('hidden')"></script>
-  <script defer src="index.js"></script>
-</head>
-<body>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-  <!-- Banner de error CDN -->
-  <div id="cdn-error" class="cdn-error-banner hidden" role="alert">
-    <span>⚠️ Error de red: no se pudieron cargar las librerías CDN necesarias. Revisa tu conexión.</span>
-  </div>
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-dark);
+  padding: 40px 15px;
+}
 
-  <!-- Screen Loader -->
-  <div id="loading-overlay" class="overlay hidden" role="status" aria-live="polite">
-    <div class="loader-spinner"></div>
-    <p id="loading-text">Generando documento...</p>
-    <progress id="progress-bar" value="0" max="100" class="hidden"></progress>
-  </div>
+.container {
+  max-width: 780px;
+  background: var(--surface);
+  margin: 0 auto;
+  padding: 35px;
+  border-radius: var(--radius);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
 
-  <div id="toast-container" class="toast-container" aria-live="assertive"></div>
+.app-header h1 {
+  color: var(--primary);
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
 
-  <!-- Interfaz Principal -->
-  <main class="container">
-    <header class="app-header">
-      <div class="badge-status"><span class="pulse"></span> Motor de Generación v2.7</div>
-      <h1>Generador de Informes PDF</h1>
-      <p class="subtitulo">Ingresa los datos del evento y adjunta o **arrastra** las 4 evidencias fotográficas.</p>
-    </header>
+.subtitulo {
+  color: var(--text-muted);
+  font-size: 14px;
+}
 
-    <hr class="divider" />
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: rgba(0, 82, 155, 0.08);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
 
-    <form id="form-informe" onsubmit="return false;">
-      <fieldset class="grupo">
-        <label for="tipoEvento">Tipo de Evento</label>
-        <div class="select-custom">
-          <select id="tipoEvento" required>
-            <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
-            <option value="VISITA_IE">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
-            <option value="VISITA_ADULTOS">VISITA DE ADULTOS A LA PLANTA</option>
-            <option value="TALLER_IE">TALLER A INSTITUCIONES EDUCATIVAS</option>
-            <option value="TALLER_EMPRESAS">TALLER A EMPRESAS</option>
-            <option value="TALLER_COMUNIDAD">TALLER A LA COMUNIDAD</option>
-            <option value="TALLER_VIRTUAL">TALLER VIRTUAL</option>
-          </select>
-        </div>
-      </fieldset>
+.pulse {
+  width: 6px;
+  height: 6px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  animation: pulse-dot 2s infinite;
+}
 
-      <div class="grupo">
-        <label for="institucion">Institución o Entidad</label>
-        <div class="fila-compartida-dinamica">
-          <div class="col-subcategoria">
-            <div class="select-custom">
-              <select id="subCategoria" disabled aria-label="Tipo de institución">
-                <option value="" disabled selected>-- Tipo --</option>
-              </select>
-            </div>
-          </div>
-          <div class="col-nombre">
-            <input type="text" id="institucion" placeholder="Selecciona el tipo de evento primero" disabled
-                   autocomplete="off" maxlength="120" aria-label="Nombre de la institución" />
-          </div>
-        </div>
-      </div>
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba(0, 82, 155, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(0, 82, 155, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 82, 155, 0); }
+}
 
-      <div class="grupo fila-compartida">
-        <div class="subgrupo">
-          <label for="distrito">Distrito</label>
-          <input type="text" id="distrito" placeholder="Ej: LOS OLIVOS" autocomplete="off" maxlength="80" aria-label="Distrito" />
-        </div>
-        <div class="subgrupo">
-          <label for="fecha">Fecha</label>
-          <input type="date" id="fecha" aria-label="Fecha del evento" />
-        </div>
-      </div>
+.divider {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 25px 0;
+}
 
-      <hr class="divider" />
+.grupo {
+  margin-bottom: 20px;
+  border: none;
+}
 
-      <fieldset class="grupo">
-        <legend class="section-title">Evidencias Fotográficas <small>(4 requeridas — Haz clic o arrastra)</small></legend>
-        <div class="fotos-grid">
-          
-          <div class="foto-item">
-            <label for="foto1">Foto 1 <span class="label-hint">(Pág 1 - Sup)</span></label>
-            <input type="file" id="foto1" accept="image/*" aria-label="Foto 1" />
-            <div class="wrapper-miniatura" id="drop-zone-1" data-slot="1">
-              <img id="form-preview1" class="miniatura-control" alt="Vista previa foto 1" />
-              <div class="placeholder-content">
-                <span class="placeholder-icon">📁</span>
-                <span class="placeholder-text">Arrastra aquí o haz clic arriba</span>
-              </div>
-            </div>
-          </div>
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
 
-          <div class="foto-item">
-            <label for="foto2">Foto 2 <span class="label-hint">(Pág 1 - Inf)</span></label>
-            <input type="file" id="foto2" accept="image/*" aria-label="Foto 2" />
-            <div class="wrapper-miniatura" id="drop-zone-2" data-slot="2">
-              <img id="form-preview2" class="miniatura-control" alt="Vista previa foto 2" />
-              <div class="placeholder-content">
-                <span class="placeholder-icon">📁</span>
-                <span class="placeholder-text">Arrastra aquí o haz clic arriba</span>
-              </div>
-            </div>
-          </div>
+label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
 
-          <div class="foto-item">
-            <label for="foto3">Foto 3 <span class="label-hint">(Pág 2 - Sup)</span></label>
-            <input type="file" id="foto3" accept="image/*" aria-label="Foto 3" />
-            <div class="wrapper-miniatura" id="drop-zone-3" data-slot="3">
-              <img id="form-preview3" class="miniatura-control" alt="Vista previa foto 3" />
-              <div class="placeholder-content">
-                <span class="placeholder-icon">📁</span>
-                <span class="placeholder-text">Arrastra aquí o haz clic arriba</span>
-              </div>
-            </div>
-          </div>
+.label-hint {
+  font-weight: normal;
+  color: var(--text-muted);
+  text-transform: none;
+}
 
-          <div class="foto-item">
-            <label for="foto4">Foto 4 <span class="label-hint">(Pág 2 - Inf)</span></label>
-            <input type="file" id="foto4" accept="image/*" aria-label="Foto 4" />
-            <div class="wrapper-miniatura" id="drop-zone-4" data-slot="4">
-              <img id="form-preview4" class="miniatura-control" alt="Vista previa foto 4" />
-              <div class="placeholder-content">
-                <span class="placeholder-icon">📁</span>
-                <span class="placeholder-text">Arrastra aquí o haz clic arriba</span>
-              </div>
-            </div>
-          </div>
+input[type="text"], input[type="date"], select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  background-color: #fff;
+  transition: all 0.2s ease;
+}
 
-        </div>
-      </fieldset>
+input[type="text"]:focus, input[type="date"]:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
 
-      <button class="btn-generar" id="btnGenerar" disabled>
-        <span class="btn-icon">📄</span> Generar Informe PDF
-      </button>
-    </form>
-  </main>
+input:disabled, select:disabled {
+  background-color: #f1f5f9;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
 
-  <canvas id="offscreen-canvas" style="display:none;"></canvas>
+.fila-compartida, .fila-compartida-dinamica {
+  display: flex;
+  gap: 15px;
+}
 
-  <!-- PLANTILLA DE RENDERIZADO PDF -->
-  <div id="pdf-template" aria-hidden="true">
-    <!-- PÁGINA 1 -->
-    <div class="pdf-pagina" data-page="1">
-      <img class="pdf-logo" 
-           src="logo/logosedapal-removebg-preview.png" 
-           alt="Logo Sedapal" 
-           onerror="console.error('No se encontró la imagen en logo/logosedapal-removebg-preview.png');" />
-      
-      <div class="pdf-header-block">
-        <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
-        <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
-        <p class="pdf-fecha" id="pdf-fecha-1"></p>
-      </div>
-      
-      <img class="pdf-foto" id="pdf-foto-1" alt="Foto 1" />
-      <img class="pdf-foto" id="pdf-foto-2" alt="Foto 2" />
-    </div>
+.col-subcategoria { flex: 0 0 38%; }
+.col-nombre { flex: 1; }
+.subgrupo { flex: 1; }
 
-    <!-- PÁGINA 2 -->
-    <div class="pdf-pagina" data-page="2">
-      <img class="pdf-logo" 
-           src="logo/logosedapal-removebg-preview.png" 
-           alt="Logo Sedapal" 
-           onerror="console.error('No se encontró la imagen en logo/logosedapal-removebg-preview.png');" />
-      
-      <div class="pdf-header-block">
-        <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
-        <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
-        <p class="pdf-fecha" id="pdf-fecha-2"></p>
-      </div>
-      
-      <img class="pdf-foto" id="pdf-foto-3" alt="Foto 3" />
-      <img class="pdf-foto" id="pdf-foto-4" alt="Foto 4" />
-    </div>
-  </div>
+input[type="text"] {
+  text-transform: uppercase;
+}
 
-  <footer class="app-footer">
-    <small>Sistema Institucional de Reportes — SEDAPAL v2.7</small>
-  </footer>
+/* Grilla de Subida de Fotos con Drag & Drop */
+.fotos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
 
-</body>
-</html>
+input[type="file"] {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+}
+
+.wrapper-miniatura {
+  width: 100%;
+  height: 125px;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wrapper-miniatura:hover {
+  border-color: var(--primary);
+  background-color: rgba(0, 82, 155, 0.02);
+}
+
+/* Estado Drag & Drop Activo */
+.wrapper-miniatura.drag-over {
+  border-color: var(--primary);
+  border-style: solid;
+  background-color: rgba(0, 82, 155, 0.1);
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(0, 82, 155, 0.15);
+}
+
+.wrapper-miniatura.drag-over .placeholder-icon {
+  transform: scale(1.2);
+  color: var(--primary);
+}
+
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.placeholder-icon {
+  font-size: 24px;
+  color: #94a3b8;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.placeholder-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.miniatura-control {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+  position: absolute;
+  top: 0; left: 0;
+  z-index: 2;
+}
+
+.btn-generar {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-generar:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btn-generar:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.hidden { display: none !important; }
+
+.loader-spinner {
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  width: 44px; height: 44px;
+  animation: spin 0.9s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.cdn-error-banner {
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 12px;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 2px solid #f87171;
+  font-size: 13px;
+}
+
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 11000; }
+.toast { background: #1e293b; color: #fff; padding: 12px 20px; margin-bottom: 10px; border-radius: 6px; font-size: 13px; font-weight: 500; }
+.toast-error { background: #ef4444; }
+.toast-success { background: #10b981; }
+
+/* PLANTILLA DE IMPRESIÓN (A4 strict) */
+#pdf-template {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  background-color: transparent;
+}
+
+.pdf-pagina {
+  width: 794px;
+  height: 1123px;
+  padding: 50px 56px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.pdf-header-block {
+  width: 100%;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.pdf-logo {
+  width: 175px; 
+  height: auto; 
+  align-self: flex-start;
+  margin-bottom: 5px;
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.pdf-titulo {
+  font-size: 34px;
+  font-weight: 700;
+  color: #00529b;
+  text-align: center;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  line-height: 1.15;
+}
+
+.pdf-subtitulo {
+  font-size: 24px;
+  color: #1e293b;
+  text-align: center;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  width: 100%;
+}
+
+.pdf-fecha {
+  font-size: 18px;
+  color: #64748b;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.pdf-foto {
+  width: 100%;
+  height: 370px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.pdf-foto:last-child { margin-bottom: 0; }
+.app-footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 12px; }
