@@ -23,11 +23,12 @@
 </head>
 <body>
 
-  <!-- Notificaciones de Sistema -->
+  <!-- Banner de error CDN -->
   <div id="cdn-error" class="cdn-error-banner hidden" role="alert">
     <span>⚠️ Error de red: no se pudieron cargar las librerías CDN necesarias. Revisa tu conexión.</span>
   </div>
 
+  <!-- Screen Loader -->
   <div id="loading-overlay" class="overlay hidden" role="status" aria-live="polite">
     <div class="loader-spinner"></div>
     <p id="loading-text">Generando documento...</p>
@@ -36,12 +37,12 @@
 
   <div id="toast-container" class="toast-container" aria-live="assertive"></div>
 
-  <!-- Interfaz de Control -->
+  <!-- Interfaz Principal -->
   <main class="container">
     <header class="app-header">
-      <div class="badge-status"><span class="pulse"></span> Motor de Generación v2.5</div>
+      <div class="badge-status"><span class="pulse"></span> Motor de Generación v2.6</div>
       <h1>Generador de Informes PDF</h1>
-      <p class="subtitulo">Ingresa los datos del evento y selecciona las 4 evidencias fotográficas.</p>
+      <p class="subtitulo">Ingresa los datos del evento y adjunta las 4 evidencias fotográficas.</p>
     </header>
 
     <hr class="divider" />
@@ -73,7 +74,7 @@
             </div>
           </div>
           <div class="col-nombre">
-            <input type="text" id="institucion" placeholder="Selecciona tipo de evento primero" disabled
+            <input type="text" id="institucion" placeholder="Selecciona el tipo de evento primero" disabled
                    autocomplete="off" maxlength="120" aria-label="Nombre de la institución" />
           </div>
         </div>
@@ -97,7 +98,7 @@
         <div class="fotos-grid">
           
           <div class="foto-item">
-            <label for="foto1">Foto 1 <span class="label-hint">(Página 1 - Superior)</span></label>
+            <label for="foto1">Foto 1 <span class="label-hint">(Pág 1 - Sup)</span></label>
             <input type="file" id="foto1" accept="image/*" aria-label="Foto 1" />
             <div class="wrapper-miniatura">
               <img id="form-preview1" class="miniatura-control" alt="Vista previa foto 1" />
@@ -106,7 +107,7 @@
           </div>
 
           <div class="foto-item">
-            <label for="foto2">Foto 2 <span class="label-hint">(Página 1 - Inferior)</span></label>
+            <label for="foto2">Foto 2 <span class="label-hint">(Pág 1 - Inf)</span></label>
             <input type="file" id="foto2" accept="image/*" aria-label="Foto 2" />
             <div class="wrapper-miniatura">
               <img id="form-preview2" class="miniatura-control" alt="Vista previa foto 2" />
@@ -115,7 +116,7 @@
           </div>
 
           <div class="foto-item">
-            <label for="foto3">Foto 3 <span class="label-hint">(Página 2 - Superior)</span></label>
+            <label for="foto3">Foto 3 <span class="label-hint">(Pág 2 - Sup)</span></label>
             <input type="file" id="foto3" accept="image/*" aria-label="Foto 3" />
             <div class="wrapper-miniatura">
               <img id="form-preview3" class="miniatura-control" alt="Vista previa foto 3" />
@@ -124,7 +125,7 @@
           </div>
 
           <div class="foto-item">
-            <label for="foto4">Foto 4 <span class="label-hint">(Página 2 - Inferior)</span></label>
+            <label for="foto4">Foto 4 <span class="label-hint">(Pág 2 - Inf)</span></label>
             <input type="file" id="foto4" accept="image/*" aria-label="Foto 4" />
             <div class="wrapper-miniatura">
               <img id="form-preview4" class="miniatura-control" alt="Vista previa foto 4" />
@@ -143,15 +144,14 @@
 
   <canvas id="offscreen-canvas" style="display:none;"></canvas>
 
-  <!-- PLANTILLA MOTOR PDF (Lienzo A4 para html2canvas) -->
+  <!-- PLANTILLA DE RENDERIZADO PDF -->
   <div id="pdf-template" aria-hidden="true">
-    
     <!-- PÁGINA 1 -->
     <div class="pdf-pagina" data-page="1">
       <img class="pdf-logo" 
            src="logo/logosedapal-removebg-preview.png" 
            alt="Logo Sedapal" 
-           onerror="console.error('Error Crítico: No se encontró el logo en logo/logosedapal-removebg-preview.png'); alert('⚠️ Alerta: No se encontró el logo corporativo en [logo/logosedapal-removebg-preview.png]. El PDF se emitirá sin la cabecera oficial.');" />
+           onerror="console.error('No se encontró la imagen en logo/logosedapal-removebg-preview.png');" />
       
       <div class="pdf-header-block">
         <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
@@ -168,7 +168,7 @@
       <img class="pdf-logo" 
            src="logo/logosedapal-removebg-preview.png" 
            alt="Logo Sedapal" 
-           onerror="console.error('Error Crítico: No se encontró el logo en logo/logosedapal-removebg-preview.png');" />
+           onerror="console.error('No se encontró la imagen en logo/logosedapal-removebg-preview.png');" />
       
       <div class="pdf-header-block">
         <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
@@ -179,11 +179,10 @@
       <img class="pdf-foto" id="pdf-foto-3" alt="Foto 3" />
       <img class="pdf-foto" id="pdf-foto-4" alt="Foto 4" />
     </div>
-
   </div>
 
   <footer class="app-footer">
-    <small>Sistema Institucional de Reportes — SEDAPAL v2.5</small>
+    <small>Sistema Institucional de Reportes — SEDAPAL v2.6</small>
   </footer>
 
 </body>
