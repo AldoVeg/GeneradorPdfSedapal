@@ -1,120 +1,190 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Generador de Eventos & Constancias | Tech Hub</title>
-  <!-- Google Fonts: Inter & Outfit -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Generador de informes PDF para SEDAPAL — visitas y talleres" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <title>Generador de PDF — SEDAPAL</title>
+  
+  <!-- Tipografía Profesional -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
-  <!-- CSS Personalizado -->
-  <link rel="stylesheet" href="styles.css">
-  <!-- jsPDF Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="index.css" />
+
+  <!-- Librerías de Renderizado -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+          onerror="document.getElementById('cdn-error').classList.remove('hidden')"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+          onerror="document.getElementById('cdn-error').classList.remove('hidden')"></script>
+  <script defer src="index.js"></script>
 </head>
 <body>
 
-  <div class="tech-background">
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
+  <!-- Notificaciones de Sistema -->
+  <div id="cdn-error" class="cdn-error-banner hidden" role="alert">
+    <span>⚠️ Error de red: no se pudieron cargar las librerías CDN necesarias. Revisa tu conexión.</span>
   </div>
 
-  <main class="app-container">
-    <!-- Header del Sistema -->
+  <div id="loading-overlay" class="overlay hidden" role="status" aria-live="polite">
+    <div class="loader-spinner"></div>
+    <p id="loading-text">Generando documento...</p>
+    <progress id="progress-bar" value="0" max="100" class="hidden"></progress>
+  </div>
+
+  <div id="toast-container" class="toast-container" aria-live="assertive"></div>
+
+  <!-- Interfaz de Control -->
+  <main class="container">
     <header class="app-header">
-      <div class="badge-tech"><span class="pulse-dot"></span> Módulo de Certificación V2.5</div>
-      <h1>Gestor de Eventos & Talleres</h1>
-      <p>Configura, valida y genera certificados con precisión institucional.</p>
+      <div class="badge-status"><span class="pulse"></span> Motor de Generación v2.5</div>
+      <h1>Generador de Informes PDF</h1>
+      <p class="subtitulo">Ingresa los datos del evento y selecciona las 4 evidencias fotográficas.</p>
     </header>
 
-    <div class="grid-layout">
-      <!-- Formulario interactivo -->
-      <section class="card form-card glass-panel">
-        <div class="card-header">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
-          <h2>Parámetros del Evento</h2>
-        </div>
+    <hr class="divider" />
 
-        <form id="eventoForm" onsubmit="event.preventDefault();">
+    <form id="form-informe" onsubmit="return false;">
+      <fieldset class="grupo">
+        <label for="tipoEvento">Tipo de Evento</label>
+        <div class="select-custom">
+          <select id="tipoEvento" required>
+            <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
+            <option value="VISITA_IE">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
+            <option value="VISITA_ADULTOS">VISITA DE ADULTOS A LA PLANTA</option>
+            <option value="TALLER_IE">TALLER A INSTITUCIONES EDUCATIVAS</option>
+            <option value="TALLER_EMPRESAS">TALLER A EMPRESAS</option>
+            <option value="TALLER_COMUNIDAD">TALLER A LA COMUNIDAD</option>
+            <option value="TALLER_VIRTUAL">TALLER VIRTUAL</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <div class="grupo">
+        <label for="institucion">Institución o Entidad</label>
+        <div class="fila-compartida-dinamica">
+          <div class="col-subcategoria">
+            <div class="select-custom">
+              <select id="subCategoria" disabled aria-label="Tipo de institución">
+                <option value="" disabled selected>-- Tipo --</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-nombre">
+            <input type="text" id="institucion" placeholder="Selecciona tipo de evento primero" disabled
+                   autocomplete="off" maxlength="120" aria-label="Nombre de la institución" />
+          </div>
+        </div>
+      </div>
+
+      <div class="grupo fila-compartida">
+        <div class="subgrupo">
+          <label for="distrito">Distrito</label>
+          <input type="text" id="distrito" placeholder="Ej: LOS OLIVOS" autocomplete="off" maxlength="80" aria-label="Distrito" />
+        </div>
+        <div class="subgrupo">
+          <label for="fecha">Fecha</label>
+          <input type="date" id="fecha" aria-label="Fecha del evento" />
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <fieldset class="grupo">
+        <legend class="section-title">Evidencias Fotográficas <small>(4 requeridas — 2 por página)</small></legend>
+        <div class="fotos-grid">
           
-          <!-- Tipo de Evento -->
-          <div class="input-group">
-            <label for="tipoEvento">Tipo de Evento</label>
-            <div class="select-wrapper">
-              <select id="tipoEvento" required>
-                <option value="" disabled selected>-- Selecciona un tipo de evento --</option>
-                <option value="VISITA_IE">VISITA DE INSTITUCIONES EDUCATIVAS A LA PLANTA</option>
-                <option value="VISITA_ADULTOS">VISITA DE ADULTOS A LA PLANTA</option>
-                <option value="TALLER_IE">TALLER A INSTITUCIONES EDUCATIVAS</option>
-                <option value="TALLER_EMPRESAS">TALLER A EMPRESAS</option>
-                <option value="TALLER_COMUNIDAD">TALLER A LA COMUNIDAD</option>
-                <option value="TALLER_VIRTUAL">TALLER VIRTUAL</option>
-              </select>
+          <div class="foto-item">
+            <label for="foto1">Foto 1 <span class="label-hint">(Página 1 - Superior)</span></label>
+            <input type="file" id="foto1" accept="image/*" aria-label="Foto 1" />
+            <div class="wrapper-miniatura">
+              <img id="form-preview1" class="miniatura-control" alt="Vista previa foto 1" />
+              <span class="placeholder-icon">📷</span>
             </div>
           </div>
 
-          <!-- Subcategoría (Dinamica) -->
-          <div class="input-group">
-            <label for="subCategoria">Subcategoría / Entidad</label>
-            <div class="select-wrapper">
-              <select id="subCategoria" required disabled>
-                <option value="" disabled selected>-- Selecciona un tipo de evento primero --</option>
-              </select>
+          <div class="foto-item">
+            <label for="foto2">Foto 2 <span class="label-hint">(Página 1 - Inferior)</span></label>
+            <input type="file" id="foto2" accept="image/*" aria-label="Foto 2" />
+            <div class="wrapper-miniatura">
+              <img id="form-preview2" class="miniatura-control" alt="Vista previa foto 2" />
+              <span class="placeholder-icon">📷</span>
             </div>
           </div>
 
-          <!-- Nombre de Institución -->
-          <div class="input-group">
-            <label for="nombreInstitucion">Nombre de la Institución / Empresa</label>
-            <input type="text" id="nombreInstitucion" placeholder="Ej: San Juan Bautista" autocomplete="off" required>
+          <div class="foto-item">
+            <label for="foto3">Foto 3 <span class="label-hint">(Página 2 - Superior)</span></label>
+            <input type="file" id="foto3" accept="image/*" aria-label="Foto 3" />
+            <div class="wrapper-miniatura">
+              <img id="form-preview3" class="miniatura-control" alt="Vista previa foto 3" />
+              <span class="placeholder-icon">📷</span>
+            </div>
           </div>
 
-          <!-- Distrito -->
-          <div class="input-group">
-            <label for="distrito">Distrito / Localidad</label>
-            <input type="text" id="distrito" placeholder="Ej: Miraflores" autocomplete="off" required>
+          <div class="foto-item">
+            <label for="foto4">Foto 4 <span class="label-hint">(Página 2 - Inferior)</span></label>
+            <input type="file" id="foto4" accept="image/*" aria-label="Foto 4" />
+            <div class="wrapper-miniatura">
+              <img id="form-preview4" class="miniatura-control" alt="Vista previa foto 4" />
+              <span class="placeholder-icon">📷</span>
+            </div>
           </div>
 
-          <!-- Acciones -->
-          <button type="button" id="btnGenerarPDF" class="btn-tech">
-            <span>Generar Documento PDF</span>
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="12" y1="18" x2="12" y2="12"></line>
-              <polyline points="9 15 12 18 15 15"></polyline>
-            </svg>
-          </button>
-        </form>
-      </section>
-
-      <!-- Visualización en vivo -->
-      <section class="card preview-card glass-panel">
-        <div class="card-header">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-          <h2>Previsualización en Tiempo Real</h2>
         </div>
-        
-        <div class="preview-document-box">
-          <div class="doc-watermark">PREVIEW</div>
-          <div class="doc-content">
-            <span class="doc-tag" id="prevTag">TIPO DE EVENTO</span>
-            <h3 id="prevTitulo">SELECCIONE UN EVENTO</h3>
-            <div class="doc-divider"></div>
-            <p id="prevSubtitulo" class="doc-sub">INFORMACIÓN DE LA INSTITUCIÓN Y DISTRITO</p>
-          </div>
-        </div>
-      </section>
-    </div>
+      </fieldset>
+
+      <button class="btn-generar" id="btnGenerar" disabled>
+        <span class="btn-icon">📄</span> Generar Informe PDF
+      </button>
+    </form>
   </main>
 
-  <script src="index.js"></script>
+  <canvas id="offscreen-canvas" style="display:none;"></canvas>
+
+  <!-- PLANTILLA MOTOR PDF (Lienzo A4 para html2canvas) -->
+  <div id="pdf-template" aria-hidden="true">
+    
+    <!-- PÁGINA 1 -->
+    <div class="pdf-pagina" data-page="1">
+      <img class="pdf-logo" 
+           src="logo/logosedapal-removebg-preview.png" 
+           alt="Logo Sedapal" 
+           onerror="console.error('Error Crítico: No se encontró el logo en logo/logosedapal-removebg-preview.png'); alert('⚠️ Alerta: No se encontró el logo corporativo en [logo/logosedapal-removebg-preview.png]. El PDF se emitirá sin la cabecera oficial.');" />
+      
+      <div class="pdf-header-block">
+        <h2 class="pdf-titulo" id="pdf-titulo-1"></h2>
+        <p class="pdf-subtitulo" id="pdf-institucion-1"></p>
+        <p class="pdf-fecha" id="pdf-fecha-1"></p>
+      </div>
+      
+      <img class="pdf-foto" id="pdf-foto-1" alt="Foto 1" />
+      <img class="pdf-foto" id="pdf-foto-2" alt="Foto 2" />
+    </div>
+
+    <!-- PÁGINA 2 -->
+    <div class="pdf-pagina" data-page="2">
+      <img class="pdf-logo" 
+           src="logo/logosedapal-removebg-preview.png" 
+           alt="Logo Sedapal" 
+           onerror="console.error('Error Crítico: No se encontró el logo en logo/logosedapal-removebg-preview.png');" />
+      
+      <div class="pdf-header-block">
+        <h2 class="pdf-titulo" id="pdf-titulo-2"></h2>
+        <p class="pdf-subtitulo" id="pdf-institucion-2"></p>
+        <p class="pdf-fecha" id="pdf-fecha-2"></p>
+      </div>
+      
+      <img class="pdf-foto" id="pdf-foto-3" alt="Foto 3" />
+      <img class="pdf-foto" id="pdf-foto-4" alt="Foto 4" />
+    </div>
+
+  </div>
+
+  <footer class="app-footer">
+    <small>Sistema Institucional de Reportes — SEDAPAL v2.5</small>
+  </footer>
+
 </body>
 </html>
